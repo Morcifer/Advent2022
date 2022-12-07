@@ -32,10 +32,7 @@ def process_data(data: List[str]) -> Dict[str, int]:
                         current_folder = current_folder[go_to]
                 else:
                     current_path = current_path + [datum[2]]
-                    try:
-                        current_folder = current_folder[datum[2]]
-                    except:
-                        print("meh")
+                    current_folder = current_folder[datum[2]]
         else:
             # This is the results of the ls command
             if datum[0] == "dir":

@@ -9,7 +9,7 @@ def parser(s: List[str]) -> List[str]:
     return s
 
 
-def process_data(data: List[str]) -> Dict[str, int]:
+def process_data(data: List[str]) -> Tuple[Dict[str, int], Dict[str, int]]:
     all_folders = {"/": 0}
     all_files = {}
 
@@ -17,7 +17,7 @@ def process_data(data: List[str]) -> Dict[str, int]:
     disc = {"/": {}}
     current_folder = disc
 
-    for i, datum in enumerate(data):
+    for datum in data:
         if datum[0] == "$":
             if datum[1] == "ls":
                 continue
@@ -37,28 +37,28 @@ def process_data(data: List[str]) -> Dict[str, int]:
             # This is the results of the ls command
             if datum[0] == "dir":
                 current_folder[datum[1]] = {}
-                all_folders["".join(current_path) + datum[1]] = 0
+                all_folders[f"{'/'.join(current_path)}/{datum[1]}"] = 0
                 continue
 
             current_folder[datum[1]] = datum[0]
-            all_files[datum[1]] = datum[0]
+            all_files[datum[1]] = int(datum[0])
 
             for i in range(0, len(current_path)):
-                whole_path = "".join(current_path[:i+1])
+                whole_path = "/".join(current_path[:i+1])
                 all_folders[whole_path] += int(datum[0])
 
-    return all_folders
+    return all_folders, all_files
 
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data)
+    result, _ = process_data(data)
     return sum([size for folder, size in result.items() if folder != "/" and size < 100000])
 
 
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data)
+    result, _ = process_data(data)
     size_remaining = 70000000 - result["/"]
     sizes = list(result.values())
     sizes.sort()

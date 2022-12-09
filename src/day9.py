@@ -10,14 +10,12 @@ def parser(s: List[str]) -> Tuple[str, int]:
 
 
 def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int]]:
-    knot_xs = [0 for _ in range(tails + 1)]
-    knot_ys = [0 for _ in range(tails + 1)]
-
-    visited_tail_spots = [(knot_xs[-1], knot_ys[-1])]
+    knots = [(0, 0) for _ in range(tails + 1)]
+    visited_tail_spots = [knots[-1]]
 
     for i, (direction, amount) in enumerate(data):
         for _ in range(amount):
-            head_x, head_y = knot_xs[0], knot_ys[0]
+            head_x, head_y = knots[0]
 
             if direction == "U":
                 head_y += 1
@@ -30,11 +28,11 @@ def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int
             else:
                 raise ValueError("?")
 
-            knot_xs[0], knot_ys[0] = head_x, head_y
+            knots[0] = head_x, head_y
 
             for knot_index in range(1, tails + 1):
-                head_x, head_y = knot_xs[knot_index - 1], knot_ys[knot_index - 1]
-                tail_x, tail_y = knot_xs[knot_index],  knot_ys[knot_index]
+                head_x, head_y = knots[knot_index - 1]
+                tail_x, tail_y = knots[knot_index]
 
                 if abs(head_x - tail_x) <= 1 and abs(head_y - tail_y) <= 1:
                     continue
@@ -49,10 +47,9 @@ def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int
                 elif head_y < tail_y:
                     tail_y -= 1
 
-                knot_xs[knot_index] = tail_x
-                knot_ys[knot_index] = tail_y
+                knots[knot_index] = tail_x, tail_y
 
-            visited_tail_spots.append((knot_xs[-1], knot_ys[-1]))
+            visited_tail_spots.append(knots[-1])
 
     return visited_tail_spots
 

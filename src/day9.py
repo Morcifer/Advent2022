@@ -13,8 +13,8 @@ def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int
     knots = [(0, 0) for _ in range(tails + 1)]
     visited_tail_spots = [knots[-1]]
 
-    for i, (direction, amount) in enumerate(data):
-        for _ in range(amount):
+    for i, (direction, distance) in enumerate(data):
+        for _ in range(distance):
             head_x, head_y = knots[0]
 
             if direction == "U":
@@ -37,15 +37,11 @@ def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int
                 if abs(head_x - tail_x) <= 1 and abs(head_y - tail_y) <= 1:
                     continue
 
-                if head_x > tail_x:
-                    tail_x += 1
-                elif head_x < tail_x:
-                    tail_x -= 1
+                if head_x != tail_x:
+                    tail_x += 1 * int((head_x - tail_x)/abs(head_x - tail_x))
 
-                if head_y > tail_y:
-                    tail_y += 1
-                elif head_y < tail_y:
-                    tail_y -= 1
+                if head_y != tail_y:
+                    tail_y += 1 * int((head_y - tail_y)/abs(head_y - tail_y))
 
                 knots[knot_index] = tail_x, tail_y
 

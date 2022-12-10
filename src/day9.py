@@ -37,11 +37,15 @@ def process_data(data: List[Tuple[str, int]], tails: int) -> List[Tuple[int, int
                 if abs(head_x - tail_x) <= 1 and abs(head_y - tail_y) <= 1:
                     continue
 
-                if head_x != tail_x:
-                    tail_x += 1 * int((head_x - tail_x)/abs(head_x - tail_x))
+                if head_x > tail_x:
+                    tail_x += 1
+                elif head_x < tail_x:
+                    tail_x -= 1
 
-                if head_y != tail_y:
-                    tail_y += 1 * int((head_y - tail_y)/abs(head_y - tail_y))
+                if head_y > tail_y:
+                    tail_y += 1
+                elif head_y < tail_y:
+                    tail_y -= 1
 
                 knots[knot_index] = tail_x, tail_y
 

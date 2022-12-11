@@ -12,23 +12,22 @@ class Monkey:
         number,
         items,
         worry_operation,
-        test,
+        test_divisor,
         monkey_on_true,
         monkey_on_false,
     ):
         self.number = number
         self.items = items
         self.worry_operation = worry_operation
-        self.test = test
+        self.test_divisor = test_divisor
         self.on_true = monkey_on_true
         self.on_false = monkey_on_false
 
-    def new_monkey_new_worry(self, worry_level_before_inspection):
+    def new_monkey_new_worry(self, worry_level_before_inspection, worry_divisor, global_divisor):
         worry_level_after_inspection = self.worry_operation(worry_level_before_inspection)
-        # worry_level_after_boredom = int(math.floor(worry_level_after_inspection/3.0))
-        # worry_level_after_boredom = worry_level_after_inspection % (23*19*13*17)
-        worry_level_after_boredom = worry_level_after_inspection % (19*2*3*17*13*7*5*11)
-        if self.test(worry_level_after_boredom):
+        valid_modulu = int(global_divisor * worry_divisor)
+        worry_level_after_boredom = int(math.floor(worry_level_after_inspection/worry_divisor)) % valid_modulu
+        if (worry_level_after_boredom % self.test_divisor) == 0:
             return self.on_true, worry_level_after_boredom
 
         return self.on_false, worry_level_after_boredom
@@ -63,21 +62,25 @@ def parser(s: List[List[str]]) -> Monkey:
         number=int(s[0][1][0]),
         items=[int(x.replace(",", "")) for x in s[1][2:]],
         worry_operation=worry_operation,
-        test=lambda x: (x % int(s[3][-1])) == 0,
+        test_divisor=int(s[3][-1]),
         monkey_on_true=int(s[4][-1]),
         monkey_on_false=int(s[5][-1]),
     )
 
 
-def process_data(monkeys: List[Monkey]) -> Dict[int, int]:
+def process_data(monkeys: List[Monkey], rounds: int, worry_divisor: float) -> Dict[int, int]:
     inspections = {monkey.number: 0 for monkey in monkeys}
+    global_divisor = math.prod(monkey.test_divisor for monkey in monkeys)
 
-    for round in range(10000):
-        # print(f"round {round}")
+    for _ in range(rounds):
         for monkey in monkeys:
             inspections[monkey.number] += len(monkey.items)
             for item in monkey.items:
-                new_monkey, new_worry = monkey.new_monkey_new_worry(item)
+                new_monkey, new_worry = monkey.new_monkey_new_worry(
+                    worry_level_before_inspection=item,
+                    worry_divisor=worry_divisor,
+                    global_divisor=global_divisor,
+                )
                 monkeys[new_monkey].items.append(new_worry)
             monkey.items = []
 
@@ -86,18 +89,19 @@ def process_data(monkeys: List[Monkey]) -> Dict[int, int]:
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test, cluster_lines=7)
-    result = process_data(data)
+    result = process_data(data, rounds=20, worry_divisor=3.0)
     inspections = sorted(list(result.values()))[-2:]
     return inspections[0] * inspections[1]
 
 
-def part_2(is_test: bool) -> None:
+def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test, cluster_lines=7)
-    result = process_data(data)
-    return None
+    result = process_data(data, rounds=10000, worry_divisor=1.0)
+    inspections = sorted(list(result.values()))[-2:]
+    return inspections[0] * inspections[1]
 
 
 if __name__ == '__main__':
     is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")

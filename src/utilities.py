@@ -9,6 +9,7 @@ def load_data(
     parser: Callable[[List[str]], ResultType],
     data_folder: str,
     is_test: bool,
+    cluster_lines: int = 1,
 ) -> List[ResultType]:
     file_name = (
         f"../{data_folder}/test/day{day}_data.txt" if is_test
@@ -20,10 +21,19 @@ def load_data(
 
     content = [x.strip() for x in content]
     mat = []
-
+    cluster = []
     for line in content:
         s = line.split(' ')
-        mat.append(parser(s))
+        cluster.append(s)
+        if len(cluster) == cluster_lines:
+            if cluster_lines == 1:
+                mat.append(parser(cluster[0]))
+            else:
+                mat.append(parser(cluster))
+            cluster = []
+
+    if len(cluster) > 0:
+        mat.append(parser(cluster))
 
     return mat
 

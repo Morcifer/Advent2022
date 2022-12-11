@@ -11,7 +11,7 @@ def load_data(
             ],
     data_folder: str,
     is_test: bool,
-    cluster_lines: int = 1,
+    cluster_at_empty_line: bool = False,
 ) -> List[ResultType]:
     file_name = (
         f"../{data_folder}/test/day{day}_data.txt" if is_test
@@ -22,23 +22,23 @@ def load_data(
         content = f.readlines()
 
     content = [x.strip() for x in content]
-    mat = []
+
+    parsed_data = []
     cluster = []
-    for line in content:
+
+    for line_number, line in enumerate(content):
         s = line.split(' ')
+        if not cluster_at_empty_line:
+            parsed_data.append(parser(s))
+            continue
+
         cluster.append(s)
-        if len(cluster) == cluster_lines:
-            if cluster_lines == 1:
-                mat.append(parser(cluster[0]))
-            else:
-                mat.append(parser(cluster))
+
+        if line == "" or line_number == len(content) - 1:
+            parsed_data.append(parser(cluster))
             cluster = []
 
-    # Handle the last cluster - because adding a last empty line doesn't help!
-    if len(cluster) > 0:
-        mat.append(parser(cluster))
-
-    return mat
+    return parsed_data
 
 
 def load_data_un_parsed(

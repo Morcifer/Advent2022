@@ -70,14 +70,14 @@ def process_data(monkeys: List[Monkey], rounds: int, worry_divisor: float) -> Di
 
 
 def part_1(is_test: bool) -> int:
-    data = load_data(DAY, parser, "data", is_test=is_test, cluster_lines=7)
+    data = load_data(DAY, parser, "data", is_test=is_test, cluster_at_empty_line=True)
     result = process_data(data, rounds=20, worry_divisor=3.0)
     inspections = sorted(list(result.values()))[-2:]
     return inspections[0] * inspections[1]
 
 
 def part_2(is_test: bool) -> int:
-    data = load_data(DAY, parser, "data", is_test=is_test, cluster_lines=7)
+    data = load_data(DAY, parser, "data", is_test=is_test, cluster_at_empty_line=True)
     result = process_data(data, rounds=10000, worry_divisor=1.0)
     inspections = sorted(list(result.values()))[-2:]
     return inspections[0] * inspections[1]

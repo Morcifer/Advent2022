@@ -1,12 +1,14 @@
-from typing import List, TypeVar, Callable
-
+from typing import List, TypeVar, Callable, Union
 
 ResultType = TypeVar('ResultType')
 
 
 def load_data(
     day: int,
-    parser: Callable[[List[str]], ResultType],
+    parser: Union[
+                Callable[[List[str]], ResultType],
+                Callable[[List[List[str]]], ResultType]
+            ],
     data_folder: str,
     is_test: bool,
     cluster_lines: int = 1,
@@ -32,6 +34,7 @@ def load_data(
                 mat.append(parser(cluster))
             cluster = []
 
+    # Handle the last cluster - because adding a last empty line doesn't help!
     if len(cluster) > 0:
         mat.append(parser(cluster))
 

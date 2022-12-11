@@ -40,28 +40,10 @@ def parser(s: List[List[str]]) -> Monkey:
     #   Test: divisible by 23
     #     If true: throw to monkey 2
     #     If false: throw to monkey 3
-    worry_operation_line = s[2]
-    operation = worry_operation_line[4]
-    second_value = worry_operation_line[5]
-
-    if operation == "+":
-        if second_value == "old":
-            worry_operation = lambda x: x + x
-        else:
-            worry_operation = lambda x: x + int(second_value)
-
-    elif operation == "*":
-        if second_value == "old":
-            worry_operation = lambda x: x * x
-        else:
-            worry_operation = lambda x: x * int(second_value)
-    else:
-        raise ValueError
-
     return Monkey(
         number=int(s[0][1][0]),
         items=[int(x.replace(",", "")) for x in s[1][2:]],
-        worry_operation=worry_operation,
+        worry_operation=eval("lambda old:" + "".join(s[2][-3:])),
         test_divisor=int(s[3][-1]),
         monkey_on_true=int(s[4][-1]),
         monkey_on_false=int(s[5][-1]),

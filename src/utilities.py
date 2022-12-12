@@ -1,3 +1,4 @@
+import os
 from typing import List, TypeVar, Callable, Union
 
 ResultType = TypeVar('ResultType')
@@ -14,8 +15,8 @@ def load_data(
     cluster_at_empty_line: bool = False,
 ) -> List[ResultType]:
     file_name = (
-        f"../{data_folder}/test/day{day}_data.txt" if is_test
-        else f"../{data_folder}/real/day{day}_data.txt"
+        os.path.join("..", data_folder, "test", f"day{day}_data.txt") if is_test
+        else os.path.join("..", data_folder, "real", f"day{day}_data.txt")
     )
 
     with open(file_name) as f:
@@ -48,8 +49,8 @@ def load_data_un_parsed(
     suffix: str = "",
 ) -> List[ResultType]:
     file_name = (
-        f"../{data_folder}/test/day{day}_data{suffix}.txt" if is_test
-        else f"../{data_folder}/real/day{day}_data{suffix}.txt"
+        os.path.join("..", data_folder, "test", f"day{day}_data{suffix}.txt") if is_test
+        else os.path.join("..", data_folder, "real", f"day{day}_data{suffix}.txt")
     )
 
     with open(file_name) as f:

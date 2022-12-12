@@ -16,7 +16,7 @@ interesting_cycles = list(range(20, 221, 40))
 
 
 def process_data(data: List[Optional[int]]) -> Dict[int, int]:
-    result = {c: 0 for c in interesting_cycles}
+    result = {}
 
     cycle = 1
     value = 1

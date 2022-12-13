@@ -1,3 +1,4 @@
+import itertools
 from functools import partial, cmp_to_key
 from typing import List, Optional, Tuple, Dict
 
@@ -26,12 +27,13 @@ def process_data(data: List[Tuple]) -> List[int]:
 buffer_1 = [[2]]
 buffer_2 = [[6]]
 
-def order_data(data: List[Tuple]) -> List[int]:
-    everything = [buffer_1, buffer_2]
-    for left, right in data:
-        everything.append(left)
-        everything.append(right)
 
+def flatten(sequence):
+    return list(itertools.chain(*sequence))
+
+
+def order_data(data: List[Tuple]) -> List:
+    everything = [buffer_1, buffer_2] + flatten([left, right] for left, right in data)
     everything = sorted(everything, key=cmp_to_key(compare_values))
 
     return everything

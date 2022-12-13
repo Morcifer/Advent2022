@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partial, cmp_to_key
 from typing import List, Optional, Tuple, Dict
 
 from src.utilities import load_data
@@ -15,39 +15,29 @@ def process_data(data: List[Tuple]) -> List[int]:
 
     for index, (packet_left, packet_right) in enumerate(data):
         comparison = compare_values(packet_left, packet_right)
-        if comparison is True:
-            print(packet_left, packet_right, "right order")
+        if comparison == -1:
             result.append(index + 1)
-        elif comparison is False:
-            print(packet_left, packet_right, "wrong order")
-        elif comparison is None:
-            print(packet_left, packet_right, "is in trouble")
+        elif comparison == 0:
+            raise ValueError("You have a bug!")
 
     return result
 
+
+buffer_1 = [[2]]
+buffer_2 = [[6]]
 
 def order_data(data: List[Tuple]) -> List[int]:
-    data.append([[2]])
-    data.append([[6]])
+    everything = [buffer_1, buffer_2]
+    for left, right in data:
+        everything.append(left)
+        everything.append(right)
 
-    # comparer = partial(compare_values, unknown=0)
-    # compare_values(unknown=0)
+    everything = sorted(everything, key=cmp_to_key(compare_values))
 
-
-    for index, (packet_left, packet_right) in enumerate(data):
-        comparison = compare_values(packet_left, packet_right)
-        if comparison is True:
-            print(packet_left, packet_right, "right order")
-            result.append(index + 1)
-        elif comparison is False:
-            print(packet_left, packet_right, "wrong order")
-        elif comparison is None:
-            print(packet_left, packet_right, "is in trouble")
-
-    return result
+    return everything
 
 
-def compare_values(left_input, right_input, unknown=None) -> bool:
+def compare_values(left_input, right_input) -> int:
     left_input = left_input[:]
     right_input = right_input[:]
 
@@ -57,16 +47,16 @@ def compare_values(left_input, right_input, unknown=None) -> bool:
 
         if isinstance(left, int) and isinstance(right, int):
             if left < right:
-                return True
+                return -1
 
             if left > right:
-                return False
+                return 1
 
             continue
 
         if isinstance(left, list) and isinstance(right, list):
             comparison = compare_values(left, right)
-            if comparison is not None:
+            if comparison != 0:
                 return comparison
 
             continue
@@ -74,7 +64,7 @@ def compare_values(left_input, right_input, unknown=None) -> bool:
         if isinstance(left, int) and isinstance(right, list):
             new_left = [left]
             comparison = compare_values(new_left, right)
-            if comparison is not None:
+            if comparison != 0:
                 return comparison
 
             continue
@@ -82,18 +72,18 @@ def compare_values(left_input, right_input, unknown=None) -> bool:
         if isinstance(left, list) and isinstance(right, int):
             new_right = [right]
             comparison = compare_values(left, new_right)
-            if comparison is not None:
+            if comparison != 0:
                 return comparison
 
             continue
 
     if len(left_input) == 0 and len(right_input) > 0:
-        return True
+        return -1
 
     if len(right_input) == 0 and len(left_input) > 0:
-        return False
+        return 1
 
-    return unknown
+    return 0
 
 
 def part_1(is_test: bool) -> int:
@@ -105,10 +95,16 @@ def part_1(is_test: bool) -> int:
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test, cluster_at_empty_line=True)
     result = order_data(data)
-    return sum(result)
+    for i, packet in enumerate(result):
+        if packet == buffer_1:
+            first_spot = i+1
+        if packet == buffer_2:
+            last_spot = i +1
+
+    return first_spot * last_spot
 
 
 if __name__ == '__main__':
-    is_test = True
+    is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
     print(f"Day {DAY} result 2: {part_2(is_test)}")

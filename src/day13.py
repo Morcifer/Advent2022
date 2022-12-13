@@ -11,6 +11,10 @@ def parser(s: List[List[str]]) -> Tuple[str, str]:
     return eval(s[0][0]), eval(s[1][0])
 
 
+def flatten(sequence):
+    return list(itertools.chain(*sequence))
+
+
 def process_data(data: List[Tuple]) -> List[int]:
     result = []
 
@@ -26,10 +30,6 @@ def process_data(data: List[Tuple]) -> List[int]:
 
 buffer_1 = [[2]]
 buffer_2 = [[6]]
-
-
-def flatten(sequence):
-    return list(itertools.chain(*sequence))
 
 
 def order_data(data: List[Tuple]) -> List:
@@ -99,7 +99,7 @@ def part_2(is_test: bool) -> int:
     result = order_data(data)
     for i, packet in enumerate(result):
         if packet == buffer_1:
-            first_spot = i+1
+            first_spot = i + 1
         if packet == buffer_2:
             last_spot = i +1
 

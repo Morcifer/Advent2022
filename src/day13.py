@@ -1,3 +1,4 @@
+from functools import partial
 from typing import List, Optional, Tuple, Dict
 
 from src.utilities import load_data
@@ -25,7 +26,28 @@ def process_data(data: List[Tuple]) -> List[int]:
     return result
 
 
-def compare_values(left_input, right_input) -> bool:
+def order_data(data: List[Tuple]) -> List[int]:
+    data.append([[2]])
+    data.append([[6]])
+
+    # comparer = partial(compare_values, unknown=0)
+    # compare_values(unknown=0)
+
+
+    for index, (packet_left, packet_right) in enumerate(data):
+        comparison = compare_values(packet_left, packet_right)
+        if comparison is True:
+            print(packet_left, packet_right, "right order")
+            result.append(index + 1)
+        elif comparison is False:
+            print(packet_left, packet_right, "wrong order")
+        elif comparison is None:
+            print(packet_left, packet_right, "is in trouble")
+
+    return result
+
+
+def compare_values(left_input, right_input, unknown=None) -> bool:
     left_input = left_input[:]
     right_input = right_input[:]
 
@@ -71,7 +93,7 @@ def compare_values(left_input, right_input) -> bool:
     if len(right_input) == 0 and len(left_input) > 0:
         return False
 
-    return None
+    return unknown
 
 
 def part_1(is_test: bool) -> int:
@@ -82,11 +104,11 @@ def part_1(is_test: bool) -> int:
 
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test, cluster_at_empty_line=True)
-    result = process_data(data)
+    result = order_data(data)
     return sum(result)
 
 
 if __name__ == '__main__':
-    is_test = False
+    is_test = True
     print(f"Day {DAY} result 1: {part_1(is_test)}")
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")

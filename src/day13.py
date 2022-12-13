@@ -17,8 +17,10 @@ def process_data(data: List[Tuple]) -> List[int]:
         if comparison is True:
             print(packet_left, packet_right, "right order")
             result.append(index + 1)
-        else:
+        elif comparison is False:
             print(packet_left, packet_right, "wrong order")
+        elif comparison is None:
+            print(packet_left, packet_right, "is in trouble")
 
     return result
 
@@ -35,13 +37,17 @@ def compare_values(left_input, right_input) -> bool:
             if left < right:
                 return True
 
-            if right < left:
+            if left > right:
                 return False
+
+            continue
 
         if isinstance(left, list) and isinstance(right, list):
             comparison = compare_values(left, right)
             if comparison is not None:
                 return comparison
+
+            continue
 
         if isinstance(left, int) and isinstance(right, list):
             new_left = [left]
@@ -49,16 +55,20 @@ def compare_values(left_input, right_input) -> bool:
             if comparison is not None:
                 return comparison
 
+            continue
+
         if isinstance(left, list) and isinstance(right, int):
             new_right = [right]
             comparison = compare_values(left, new_right)
             if comparison is not None:
                 return comparison
 
-    if len(left_input) == 0:
+            continue
+
+    if len(left_input) == 0 and len(right_input) > 0:
         return True
 
-    if len(right_input) == 0:
+    if len(right_input) == 0 and len(left_input) > 0:
         return False
 
     return None
@@ -77,6 +87,6 @@ def part_2(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = True
+    is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
     # print(f"Day {DAY} result 2: {part_2(is_test)}")

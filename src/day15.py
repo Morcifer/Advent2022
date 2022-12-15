@@ -39,24 +39,52 @@ def process_data(data: List[Tuple[Tuple[int, int], Tuple[int, int]]], target_y: 
 
 
 def process_data_2(data: List[Tuple[Tuple[int, int], Tuple[int, int]]], max_value: int) -> Tuple[int, int]:
-    sensor_beacon_distances = [
-        (sensor, beacon, manhattan_distance(sensor, beacon))
-        for (sensor, beacon) in data
-    ]
+    # possible_ranges_per_y = {y: (0, max_value) for y in range(0, max_value)}  # per y: unknown data ranges
+    ruled_out_ranges_per_y = {}
 
-    for x in range(0, max_value):
-        print(f"I'm at x = {x}")
+    for i, (sensor, beacon) in enumerate(data):
+        print(f"I'm at sensor {i + 1} out of {len(data)}, which is at {sensor} with beacon at {beacon}")
+        distance = manhattan_distance(sensor, beacon)
+        min_y = max(0, sensor[1] - distance)
+        max_y = min(max_value, sensor[1] + distance)
 
-        for y in range(0, max_value):
-            valid = True
+        # print(list(range(min_y, max_y + 1)))
 
-            for sensor, beacon, distance in sensor_beacon_distances:
-                if manhattan_distance(sensor, (x, y)) <= distance:
-                    valid = False
-                    break
+        for y in range(min_y, max_y + 1):
+            y_distance = abs(sensor[1] - y)
+            remaining_distance = abs(distance - y_distance)
+            min_x = max(0, sensor[0] - remaining_distance)
+            max_x = min(max_value, sensor[0] + remaining_distance)
 
-            if valid:
-                return x, y
+            if y in ruled_out_ranges_per_y:
+                old_ranges = ruled_out_ranges_per_y[y]
+                for range_min, range_max in old_ranges:
+                    # If overlap - is bigger now!
+                    if range_min <= max_x and min_x <= range_max or range_max + 1 == min_x or max_x + 1 == range_min:
+                        min_x = min(min_x, range_min)
+                        max_x = max(max_x, range_max)
+
+                new_ranges = [
+                    (range_min, range_max)
+                    for (range_min, range_max) in old_ranges
+                    if not (min_x <= range_min <= range_max <= max_x)
+                ]  # Get rid of anything that's already in it.
+
+                new_ranges.append((min_x, max_x))
+                ruled_out_ranges_per_y[y] = new_ranges
+            else:
+                ruled_out_ranges_per_y[y] = [(min_x, max_x)]
+
+    # print(ruled_out_ranges_per_y)
+
+    for y, value in ruled_out_ranges_per_y.items():
+        if len(value) != 1:
+            lower_range, upper_range = value
+            if lower_range[0] != 0 and upper_range[1] != max_value:
+                print(f"Something is wrong, for y {y} I have ranges {value}")
+
+            x = lower_range[1] + 1
+            print(f"I think the answer is {x}, {y}, which is to say {4000000 * x + y}")
 
     return None
 
@@ -70,7 +98,7 @@ def part_1(is_test: bool) -> int:
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
     result = process_data_2(data, max_value=20 if is_test else 4000000)
-    return 4000000 * result[0] + result[1]
+    return result  # 4000000 * result[0] + result[1]  # Not 16000006855041
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ def process_data(data: List[Tuple[Tuple[int, int], Tuple[int, int]]], target_y: 
     beacons = set(beacon for _, beacon in data)
 
     for i, (sensor, beacon) in enumerate(data):
-        print(f"I'm at sensor {i} out of {len(data)}")
+        print(f"I'm at sensor {i + 1} out of {len(data)}, which is at {sensor} with beacon at {beacon}")
         distance = manhattan_distance(sensor, beacon)
         y = target_y
         for x in range(sensor[0] - distance, sensor[0] + distance + 1):
@@ -106,5 +106,5 @@ def part_2(is_test: bool) -> int:
 
 if __name__ == '__main__':
     is_test = False
-    # print(f"Day {DAY} result 1: {part_1(is_test)}")
+    print(f"Day {DAY} result 1: {part_1(is_test)}")
     print(f"Day {DAY} result 2: {part_2(is_test)}")

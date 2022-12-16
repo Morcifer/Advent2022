@@ -163,6 +163,66 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
     interesting_nodes = [key for key, value in graph_nodes.items() if value > 0]
     interesting_nodes.sort(key=lambda n: -graph_nodes[n])
 
+    still_to_check = [(26, 0, starting_node)]
+    checked = set()
+    all_checked = {node: [] for node in graph_nodes.keys()}
+
+    while len(still_to_check) > 0:
+        to_check_now = still_to_check.pop(0)
+
+        if to_check_now in checked:
+            continue
+
+        checked.add(to_check_now)
+        time_left, final_flow, path_string = to_check_now
+        path = path_string.split("-")
+
+        if time_left <= 0:
+            continue
+
+        current_node = path[-1]
+
+        if len(path) == len(graph_nodes):
+            # We've visited everything, no need to go on
+            continue
+
+        all_checked[current_node].append(to_check_now)
+
+        # Find neighbours
+        for target in interesting_nodes:
+            if target in path:
+                continue
+
+            distance = dist[(current_node, target)]
+            target_flow = graph_nodes[target]
+
+            # Open, because if you didn't want to open it, you shouldn't have passed by here
+            new_time_left = time_left - distance - 1
+            extra_flow = new_time_left * target_flow
+            new_final_flow = final_flow + extra_flow
+            new_path_string = path_string + "-" + target
+
+            new_to_search = new_time_left, new_final_flow, new_path_string
+            still_to_check.insert(0, new_to_search)
+
+    all_possibilities = flatten(all_checked.values())
+    all_possibilities = sorted(all_possibilities, key=lambda x: -x[1])
+
+    all_possibilities = all_possibilities[:5000]
+
+    all_pairs = [
+        (solution_1, solution_2)
+        for solution_1 in all_possibilities
+        for solution_2 in all_possibilities
+        if len(set(solution_1[2].split("-")).intersection(solution_2[2].split("-"))) == 1
+    ]
+
+    best = max(all_pairs, key=lambda s: s[0][1] + s[1][1])
+
+    print(len(all_pairs))
+    print(best)
+    return -1
+
     still_to_check = [((26, 26), 0, (starting_node, starting_node))]
     checked = set()
     all_checked = {(node_1, node_2): [] for node_1 in graph_nodes.keys() for node_2 in graph_nodes.keys()}
@@ -170,6 +230,9 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
 
     while len(still_to_check) > 0:
         # print(f"Stack size is {len(still_to_check)}")
+        still_to_check.sort(key=lambda x: x[1])
+        still_to_check = still_to_check[:100]
+
         to_check_now = still_to_check.pop(0)
 
         if to_check_now in checked:

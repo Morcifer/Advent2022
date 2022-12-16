@@ -55,7 +55,8 @@ def process_data(data: List[Tuple[str, int, List[str]]], time_to_open) -> List[T
                 if dist[(node_i, node_j)] > dist[(node_i, node_k)] + dist[(node_k, node_j)]:
                     dist[(node_i, node_j)] = dist[(node_i, node_k)] + dist[(node_k, node_j)]
 
-    # Now we need to find the best path still under time_to_open/30 which only stops at > 0 flow and maximises pressure...
+    # Now we need to find the best path still 30/under time_to_open minutes,
+    # which maximises pressure...
     interesting_nodes = [key for key, value in graph_nodes.items() if value > 0]
 
     still_to_check = [(time_to_open, 0, starting_node)]
@@ -105,7 +106,7 @@ def process_data(data: List[Tuple[str, int, List[str]]], time_to_open) -> List[T
 
 def process_data_2(all_possibilities: List[Tuple[int, str]]) -> Tuple[Tuple[int, str], Tuple[int, str]]:
     all_possibilities = sorted(all_possibilities, key=lambda x: -x[0])
-    all_possibilities = all_possibilities[:5000]
+    all_possibilities = all_possibilities[:3000]
 
     all_pairs = [
         (solution_1, solution_2)

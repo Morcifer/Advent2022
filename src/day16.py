@@ -161,13 +161,15 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
     # Now we need to find the best path still under 26 which only stops at > 0 flow and maximises pressure...
     # But with an extra elephant!
     interesting_nodes = [key for key, value in graph_nodes.items() if value > 0]
+    interesting_nodes.sort(key=lambda n: -graph_nodes[n])
 
     still_to_check = [((26, 26), 0, (starting_node, starting_node))]
     checked = set()
     all_checked = {(node_1, node_2): [] for node_1 in graph_nodes.keys() for node_2 in graph_nodes.keys()}
+    best_flow = 0
 
     while len(still_to_check) > 0:
-        print(f"Stack size is {len(still_to_check)}")
+        # print(f"Stack size is {len(still_to_check)}")
         to_check_now = still_to_check.pop(0)
 
         if to_check_now in checked:
@@ -179,14 +181,45 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
         other_path = other_path_string.split("-")
 
         if me_time_left <= 0 or other_time_left <= 0:
+            if me_time_left >= 0 and other_time_left >= 0:
+                best_flow = max(best_flow, final_flow)
+                print(
+                    f"Best flow: {best_flow}. "
+                    f"Final_flow {final_flow} with paths {me_path_string} and {other_path_string} and times {me_time_left} and {other_time_left}. "
+                    f"Stack size {len(still_to_check)}."
+                )
             continue
 
         me_current_node = me_path[-1]
         other_current_node = other_path[-1]
 
-        if len(set(me_current_node + other_current_node)) == len(graph_nodes):
+        if len(set(me_path + other_path)) == len(graph_nodes):
             # We've visited everything, no need to go on
+            print(
+                f"Best flow: {best_flow}. "
+                f"Final_flow {final_flow} with paths {me_path_string} and {other_path_string} and times {me_time_left} and {other_time_left}. "
+                f"Stack size {len(still_to_check)}."
+            )
             continue
+
+        # Have we found better solutions that use these nodes?
+        there_is_already_better = False
+
+        for possible_better_checked in all_checked[(me_current_node, other_current_node)]:
+            (possible_me_time_left, possible_other_time_left), possible_final_flow, (possible_me_path_string, possible_other_path_string) = possible_better_checked
+            # Check the kpis
+            if possible_me_time_left >= me_time_left and possible_other_time_left >= other_time_left and possible_final_flow >= final_flow:
+                # Check the paths
+                possible_me_path = possible_me_path_string.split("-")
+                possible_other_path = possible_other_path_string.split("-")
+
+                if possible_me_path[-1] == me_current_node and possible_other_path[-1] == other_current_node and set(possible_me_path + possible_other_path) == set(me_path + other_path):
+                    there_is_already_better = True
+                    break
+
+        if there_is_already_better:
+            continue
+
 
         all_checked[(me_current_node, other_current_node)].append(to_check_now)
 
@@ -264,4 +297,4 @@ def part_2(is_test: bool) -> int:
 if __name__ == '__main__':
     is_test = False
     # print(f"Day {DAY} result 1: {part_1(is_test)}")  # 1897 is too high! 1885 is also too high. 1882 is also too high!
-    print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")  # 1922 too low! As is 2147. As is 2271.

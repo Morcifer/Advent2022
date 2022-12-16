@@ -26,7 +26,7 @@ def parser(s: List[str]) -> Tuple[str, int, List[str]]:
     return s[1], get_int(s[4]), [c.replace(",", "") for c in s[9:]]
 
 
-def process_data(data: List[Tuple[str, int, List[str]]]) -> List[Tuple[int, int]]:
+def process_data(data: List[Tuple[str, int, List[str]]]) -> int:
     graph_nodes = {}
     graph_edges = {}
 
@@ -67,36 +67,128 @@ def process_data(data: List[Tuple[str, int, List[str]]]) -> List[Tuple[int, int]
                     dist[(node_i, node_j)] = dist[(node_i, node_k)] + dist[(node_k, node_j)]
 
     # Now we need to find the best path still under 30 which only stops at > 0 flow and maximises pressure...
+    interesting_nodes = [key for key, value in graph_nodes.items() if value > 0]
     interesting_distances = {
         key: value
         for key, value in dist.items()
-        if graph_nodes[key[0]] > 0 and graph_nodes[key[1]] > 0
+        if key[0] in interesting_nodes and key[1] in interesting_nodes
     }
 
-    # procedure DFS_iterative(G, v) is
-    #     let S be a stack
-    #     S.push(v)
-    #     while S is not empty do
-    #         v = S.pop()
-    #         if v is not labeled as discovered then
-    #             label v as discovered
-    #             for all edges from v to w in G.adjacentEdges(v) do
-    #                 S.push(w)
-    # discovered
-    # s = []
-    # s.insert(0, starting_node)
-    # while len(s) > 0:
-    #     v = s.pop(0)
+    still_to_check = [(30, 0, starting_node)]
+    checked = set()
+    all_checked = {node: [] for node in graph_nodes.keys()}
 
+    while len(still_to_check) > 0:
+        to_check_now = still_to_check.pop(0)
 
-    return process_data
+        if to_check_now in checked:
+            continue
 
+        checked.add(to_check_now)
+        time_left, final_flow, path_string = to_check_now
+        path = path_string.split("-")
+
+        if path_string == "AA-DD-BB-JJ-HH":
+            print("?")
+
+        if time_left < 0:
+            continue
+
+        current_node = path[-1]
+        current_flow = graph_nodes[current_node]
+
+        there_is_already_better = False
+
+        if len(path) == len(graph_nodes):
+            # We've visited everything, no need to go on
+            continue
+
+        # for possible_better_checked in all_checked[current_node]:
+        #     possible_better_time_left, possible_better_final_flow, _ = possible_better_checked
+        #
+        #     if possible_better_time_left > time_left and possible_better_final_flow > final_flow:
+        #         there_is_already_better = True
+        #
+        # if there_is_already_better:
+        #     continue
+
+        all_checked[current_node].append(to_check_now)
+
+        # Find neighbours
+        if current_flow > 0:
+            # Only go to the good ones!
+            for target in interesting_nodes:
+                if target in path:
+                    continue
+
+                distance = interesting_distances[(current_node, target)]
+            # for (source, target), distance in interesting_distances.items():
+                target_flow = graph_nodes[target]
+                # if source == current_node and target not in path and target_flow > 0:
+                if path_string == "AA-DD-BB-JJ" and target == "HH":
+                    print(f"?")
+
+                # Open, because if you didn't want to open it, you shouldn't have passed by here
+                new_time_left = time_left - distance - 1
+                extra_flow = new_time_left * target_flow
+                new_final_flow = final_flow + extra_flow
+                new_path_string = path_string + "-" + target
+
+                if new_path_string in "AA-DD-BB-JJ-HH-EE-CC":
+                    print(f"flow with {new_path_string} is {new_final_flow}")
+
+                new_to_search = new_time_left, new_final_flow, new_path_string
+                still_to_check.insert(0, new_to_search)
+        elif current_node == starting_node:  # This is only allowed to get out of the first one...
+            for target in interesting_nodes:
+                distance = dist[(current_node, target)]
+                target_flow = graph_nodes[target]
+
+                # Open, because if you didn't want to open it, you shouldn't have passed by here
+                new_time_left = time_left - distance - 1
+                extra_flow = new_time_left * target_flow
+                new_final_flow = final_flow + extra_flow
+                new_path_string = path_string + "-" + target
+
+                if new_path_string in "AA-DD-BB-JJ-HH-EE-CC":
+                    print(f"flow with {new_path_string} is {new_final_flow}")
+
+                new_to_search = new_time_left, new_final_flow, new_path_string
+                still_to_check.insert(0, new_to_search)
+
+    all = flatten(all_checked.values())
+    best = max(all, key=lambda c: c[1])
+
+    # Rebuild path:
+    minute = 1
+    flow = 0
+    for source, target in zip(best[2].split("-")[:-1], best[2].split("-")[1:]):
+        time = dist[(source, target)]
+        print(f"At minute {minute} I am at {source}")
+
+        if graph_nodes[source] > 0:
+            minute += 1
+            extra_flow = (30 - minute + 1) * graph_nodes[source]
+            flow += extra_flow
+            print(f"I am opening {source} until {minute} for and extra {extra_flow} for a final {flow} flow")
+
+        minute += time
+
+    source = best[2].split("-")[-1]
+    print(f"At minute {minute} I am at {source}")
+    if graph_nodes[source] > 0:
+        minute += 1
+        extra_flow = (30 - minute + 1) * graph_nodes[source]
+        flow += extra_flow
+        print(f"I am opening {source} until {minute} for and extra {extra_flow} for a final {flow} flow")
+
+    return best
 
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
     result = process_data(data)
-    return sum((30 - minute) * pressure for minute, pressure in result)
+    return result
 
 
 def part_2(is_test: bool) -> int:
@@ -106,6 +198,6 @@ def part_2(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = True
-    print(f"Day {DAY} result 1: {part_1(is_test)}")
-    print(f"Day {DAY} result 2: {part_2(is_test)}")
+    is_test = False
+    print(f"Day {DAY} result 1: {part_1(is_test)}")  # 1897 is too high! 1885 is also too high. 1882 is also too high!
+    # print(f"Day {DAY} result 2: {part_2(is_test)}")

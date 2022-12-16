@@ -188,7 +188,10 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
                     f"Final_flow {final_flow} with paths {me_path_string} and {other_path_string} and times {me_time_left} and {other_time_left}. "
                     f"Stack size {len(still_to_check)}."
                 )
-            continue
+
+            if me_time_left < 0 or other_time_left < 0:
+                continue
+
 
         me_current_node = me_path[-1]
         other_current_node = other_path[-1]

@@ -316,6 +316,12 @@ def process_data_2(data: List[Tuple[str, int, List[str]]]) -> int:
 
                 new_final_flow = final_flow + me_extra_flow + other_extra_flow
 
+                expected_extra_nodes = set(interesting_nodes).difference(set(me_new_path_string + other_new_path_string))
+                expected_extra_flow = sum(graph_nodes[n] for n in expected_extra_nodes) * max(me_new_time_left, other_new_time_left)
+
+                if new_final_flow + expected_extra_flow < best_flow:
+                    continue
+
                 new_to_search = (me_new_time_left, other_new_time_left), new_final_flow, (me_new_path_string, other_new_path_string)
                 still_to_check.insert(0, new_to_search)
 

@@ -21,11 +21,15 @@ WIDTH = 7
 
 # Each rock appears so that its left edge is two units away from the left wall
 # and its bottom edge is three units above the highest rock in the room (or the floor, if there isn't one).
+def rock_bottom(height_y) -> Tuple[int, int]:
+    return (2, height_y + 3)
 
 
 def rock_0(height_y) -> List[Tuple[int, int]]:
-    # ####
-    bottom_left_x, bottom_left_y = (2, height_y + 3)
+    """
+    ####
+    """
+    bottom_left_x, bottom_left_y = rock_bottom(height_y)
 
     return [
         (bottom_left_x, bottom_left_y),
@@ -36,10 +40,12 @@ def rock_0(height_y) -> List[Tuple[int, int]]:
 
 
 def rock_1(height_y) -> List[Tuple[int, int]]:
-    # .#.
-    # ###
-    # .#.
-    bottom_left_x, bottom_left_y = (2, height_y + 3)
+    """
+    .#.
+    ###
+    .#.
+    """
+    bottom_left_x, bottom_left_y = rock_bottom(height_y)
 
     return [
         (bottom_left_x + 1, bottom_left_y),
@@ -51,10 +57,12 @@ def rock_1(height_y) -> List[Tuple[int, int]]:
 
 
 def rock_2(height_y) -> List[Tuple[int, int]]:
-    # ..#
-    # ..#
-    # ###
-    bottom_left_x, bottom_left_y = (2, height_y + 3)
+    """
+    ..#
+    ..#
+    ###
+    """
+    bottom_left_x, bottom_left_y = rock_bottom(height_y)
 
     return [
         (bottom_left_x, bottom_left_y),
@@ -66,11 +74,13 @@ def rock_2(height_y) -> List[Tuple[int, int]]:
 
 
 def rock_3(height_y) -> List[Tuple[int, int]]:
-    # #
-    # #
-    # #
-    # #
-    bottom_left_x, bottom_left_y = (2, height_y + 3)
+    """
+    #
+    #
+    #
+    #
+    """
+    bottom_left_x, bottom_left_y = rock_bottom(height_y)
     return [
         (bottom_left_x, bottom_left_y),
         (bottom_left_x, bottom_left_y + 1),
@@ -80,9 +90,11 @@ def rock_3(height_y) -> List[Tuple[int, int]]:
 
 
 def rock_4(height_y) -> List[Tuple[int, int]]:
-    # ##
-    # ##
-    bottom_left_x, bottom_left_y = (2, height_y + 3)
+    """
+    ##
+    ##
+    """
+    bottom_left_x, bottom_left_y = rock_bottom(height_y)
     return [
         (bottom_left_x, bottom_left_y),
         (bottom_left_x + 1, bottom_left_y),
@@ -100,7 +112,15 @@ rock_dictionary = {
 }
 
 
-def print_chamber(chamber: List[List[str]], extra_rock):
+def get_height_of_chamber(chamber: List[List[str]]) -> int:
+    return 1 + max(
+        y
+        for y in range(len(chamber))
+        if any(chamber[y][x] != "." for x in range(WIDTH))
+    )
+
+
+def print_chamber(chamber: List[List[str]], extra_rock=None) -> None:
     chamber = deepcopy(chamber)
 
     if extra_rock is not None:
@@ -126,14 +146,8 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
 
     for rock_turn in range(stopped_rocks):
         print(f"Rock turn {rock_turn + 1} out of {stopped_rocks}")
-        # print_chamber(chamber, None)
 
-        max_height = 1 + max(
-            y
-            for y in range(len(chamber))
-            if any(chamber[y][x] != "." for x in range(WIDTH))
-        )
-
+        max_height = get_height_of_chamber(chamber)
         gust_turn_and_height_per_rock_turn.append((gust_turn, max_height - 1))
 
         # New rock appears!
@@ -142,10 +156,7 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
         height_difference = max_y - len(chamber) + 1
         chamber.extend([fixed_empty[:] for _ in range(height_difference)])
 
-        # print_chamber(chamber, None)
-        # print_chamber(chamber, new_rock)
-
-        # Rock keeps moving!
+        # Rock keeps moving until they don't.
         while True:
             # Move by gust!
             gust = data[gust_turn % len(data)]
@@ -176,8 +187,7 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
                         # print("GO RIGHT!")
                         new_rock = possible_new_rock
 
-            # print_chamber(chamber, new_rock)
-
+            # Move by gravity!
             keep_falling = True
 
             for x, y in new_rock:
@@ -188,22 +198,16 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
             if keep_falling:
                 new_rock = [(x, y - 1) for x, y in new_rock]
                 # print("KEEP FALLING!")
-                # print_chamber(chamber, new_rock)
             else:
                 for x, y in new_rock:
                     chamber[y][x] = str(rock_turn % 5)
 
                 # print("ROCK STOPPED!")
-                # print_chamber(chamber, None)
                 break
 
     print_chamber(chamber, None)
 
-    max_height = 1 + max(
-        y
-        for y in range(len(chamber))
-        if any(chamber[y][x] != "." for x in range(WIDTH))
-    )
+    max_height = get_height_of_chamber(chamber)
 
     gust_turn_and_height_per_rock_turn.append((gust_turn, max_height - 1))
 
@@ -211,36 +215,35 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
 
 
 def find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts) -> Tuple[int, int, int, int]:
-    # start, periodicity, extra
-    print(gust_turn_and_height_per_rock_turn)
     diffs_of_heights_per_gust_turn = [
         (gust_turn_2 - gust_turn_1, height_2 - height_1)
         for (gust_turn_1, height_1), (gust_turn_2, height_2)
         in zip(gust_turn_and_height_per_rock_turn[:-1], gust_turn_and_height_per_rock_turn[1:])
     ]
-    print(diffs_of_heights_per_gust_turn)
-    print("???")
 
-    minimum_gust_turn_periodicity = length_of_gusts * len(rock_dictionary)
+    maximum_rock_periodicity = length_of_gusts * len(rock_dictionary) * 2  # It's probably without the two, but who knows.
 
-    for rock_turn_periodicity in range(5, minimum_gust_turn_periodicity * 5, 5):
-        print(f"Trying to check rock turn periodicity of {rock_turn_periodicity}")
+    for rock_turn_periodicity in range(5, maximum_rock_periodicity, 5):
+        print(f"Checking rock turn periodicity of {rock_turn_periodicity}")
 
         for starting_rock_turn in range(
-            0,
-            min(minimum_gust_turn_periodicity * 3, len(gust_turn_and_height_per_rock_turn) - rock_turn_periodicity - 1),
-            1
+            min(
+                maximum_rock_periodicity,
+                len(gust_turn_and_height_per_rock_turn) - rock_turn_periodicity - 1,
+            )
         ):
-            this = diffs_of_heights_per_gust_turn[starting_rock_turn:starting_rock_turn + rock_turn_periodicity]
-            next = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity: starting_rock_turn + rock_turn_periodicity + rock_turn_periodicity]
+            this = diffs_of_heights_per_gust_turn[starting_rock_turn : starting_rock_turn + rock_turn_periodicity]
+            next = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity : starting_rock_turn + rock_turn_periodicity + rock_turn_periodicity]
 
             total_gust_turns = sum(turn for turn, height in this)
             total_height = sum(height for turn, height in this)
 
             if total_gust_turns % length_of_gusts != 0:
-                print(f"Height {total_height} in {total_gust_turns} gust turns "
-                      f"when starting at {starting_rock_turn} for periodicity {rock_turn_periodicity} "
-                      f"is not multiple of {length_of_gusts}. Continuing.")
+            #     print(f"Height {total_height} in {total_gust_turns} gust turns "
+            #           f"when starting at {starting_rock_turn} for periodicity {rock_turn_periodicity} "
+            #           f"is not multiple of {length_of_gusts}. "
+            #           f"The search continues."
+            #           )
                 continue
 
             if this == next:
@@ -260,11 +263,12 @@ def find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gust
                         break
 
                 if valid:
+                    print(f"Periodicity validated!")
                     return starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns
                 else:
-                    print(f"Validation failed at heights {height} and {height + total_height}. Keep checking.")
+                    print(f"Validation failed at heights {height} and {height + total_height}. The search continues.")
 
-    print("I failed at finding periodicity. Maybe increase the size?")
+    print("I failed at finding periodicity. Maybe increase the number of rocks allowed to fall?")
     return None
 
 
@@ -275,41 +279,39 @@ def part_1(is_test: bool) -> int:
 
 
 def part_2(is_test: bool) -> int:
-    rock_turn_max_value = 1000000000000
-
     data = load_data(DAY, parser, "data", is_test=is_test)
-    length_of_gusts = len(data[0])
+    results = {}
+
     chamber, gust_turn_and_height_per_rock_turn = process_data(data[0], stopped_rocks=2022 if is_test else 5000)
 
+    length_of_gusts = len(data[0])
     starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns = find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts)
 
-    height_until_periodicity_starts = gust_turn_and_height_per_rock_turn[starting_rock_turn][1]
-    print(f"Height until periodicity starts: {height_until_periodicity_starts}")
+    for rock_turn_max_value in [2022, 1000000000000]:
+        height_until_periodicity_starts = gust_turn_and_height_per_rock_turn[starting_rock_turn][1]
 
-    number_of_rock_periods = math.floor((1.0 * rock_turn_max_value - starting_rock_turn) / rock_turn_periodicity)
-    height_after_periodicity_ends = height_until_periodicity_starts + number_of_rock_periods * total_height
+        number_of_rock_periods = math.floor((1.0 * rock_turn_max_value - starting_rock_turn) / rock_turn_periodicity)
+        height_after_periodicity_ends = height_until_periodicity_starts + number_of_rock_periods * total_height
 
-    print(f"Height after periodicity ends: {height_after_periodicity_ends}")
+        remaining_rock_turns = rock_turn_max_value - starting_rock_turn - number_of_rock_periods * rock_turn_periodicity
 
-    remaining_rock_turns = rock_turn_max_value - starting_rock_turn - number_of_rock_periods * rock_turn_periodicity
-    print(f"remaining_turns: {remaining_rock_turns}")
+        starting_remainder = gust_turn_and_height_per_rock_turn[starting_rock_turn]
+        end_remainder = gust_turn_and_height_per_rock_turn[starting_rock_turn + remaining_rock_turns]
 
-    starting_remainder = gust_turn_and_height_per_rock_turn[starting_rock_turn]
-    end_remainder = gust_turn_and_height_per_rock_turn[starting_rock_turn + remaining_rock_turns]
+        extra_height = end_remainder[1] - starting_remainder[1]
 
-    print(f"starting_remainder: {starting_remainder}")
-    print(f"end_remainder: {end_remainder}")
+        height_after_extra = height_after_periodicity_ends + extra_height
 
-    extra_height = end_remainder[1] - starting_remainder[1]
-    print(f"extra_height: {extra_height}")
+        results[rock_turn_max_value] = height_after_extra
 
-    height_after_extra = height_after_periodicity_ends + extra_height
-    print(f"height_after_extra: {height_after_extra}")
-
-    return height_after_extra  # Should be 3068 for 2022 and 1514285714288 for 1000000000000
+    return results
 
 
 if __name__ == '__main__':
+    # Test: Should be 3068 for 2022 and 1514285714288 for 1000000000000
+    # Real: Should be 3114 for 2022 and 1540804597682 for 1000000000000
     is_test = False
+
+    # We're printing the 2022 result as well, so we don't need the first part.
     # print(f"Day {DAY} result 1: {part_1(is_test)}")
     print(f"Day {DAY} result 2: {part_2(is_test)}")

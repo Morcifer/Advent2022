@@ -108,8 +108,8 @@ def print_chamber(chamber: List[List[str]], extra_rock):
             chamber[y][x] = "@"
 
     for i in range(len(chamber) - 1, -1, -1):
-        print(f"Height {i}: {''.join(chamber[i])}")
-        # print(''.join(chamber[i]))
+        # print(f"Height {i}: {''.join(chamber[i])}")
+        print(''.join(chamber[i]))
 
     print("")
 
@@ -125,7 +125,7 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
     gust_turn = 0
 
     for rock_turn in range(stopped_rocks):
-        # print(f"Rock turn {rock_turn + 1} out of {stopped_rocks}")
+        print(f"Rock turn {rock_turn + 1} out of {stopped_rocks}")
         # print_chamber(chamber, None)
 
         max_height = 1 + max(
@@ -210,50 +210,6 @@ def process_data(data: str, stopped_rocks) -> Tuple[List[List[str]], List[Tuple[
     return chamber, gust_turn_and_height_per_rock_turn
 
 
-def find_periodicity_in_chamber(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts):
-
-
-
-    # start, periodicity, extra
-    print(gust_turn_and_height_per_rock_turn)
-    diffs_of_heights_per_gust_turn = [
-        (gust_turn_2 - gust_turn_1, height_2 - height_1)
-        for (gust_turn_1, height_1), (gust_turn_2, height_2)
-        in zip(gust_turn_and_height_per_rock_turn[:-1], gust_turn_and_height_per_rock_turn[1:])
-    ]
-    print(diffs_of_heights_per_gust_turn)
-    print("???")
-
-    minimum_periodicity = length_of_gusts * 5
-
-    for starting_point in range(0, min(minimum_periodicity * 3, len(height_per_gust_turn)), 1):
-        print(f"Trying to start periodicity at starting point {starting_point}, which is {height_per_gust_turn[starting_point + 1]}")
-
-        for periodicity_to_check in range(1, minimum_periodicity, 1):
-            print(f"Trying to check periodicity of {periodicity_to_check}")
-
-            this = diffs_of_heights_per_gust_turn[starting_point:starting_point + periodicity_to_check]
-            next = diffs_of_heights_per_gust_turn[starting_point + periodicity_to_check: starting_point + periodicity_to_check + periodicity_to_check]
-
-            total_gust_turns = sum(turn for turn, height in this)
-            total_height = sum(height for turn, height in this)
-
-            if total_gust_turns < minimum_periodicity:
-                print(f"Height {total_height} in {total_gust_turns} gust turns is too low. Continuing.")
-                continue
-
-            if total_gust_turns > minimum_periodicity * 2:
-                print(f"Height {total_height} in {total_gust_turns} gust turns is way too high. Continuing.")
-                break
-
-            if this == next:
-                print(f"Found periodicity! It starts at {starting_point} and has height {total_height} after {total_gust_turns} gust turns!")
-                return starting_point, periodicity_to_check, total_height, total_gust_turns
-
-    print("I failed at finding periodicity. Maybe increase the size?")
-    return None
-
-
 def find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts) -> Tuple[int, int, int, int]:
     # start, periodicity, extra
     print(gust_turn_and_height_per_rock_turn)
@@ -267,28 +223,25 @@ def find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gust
 
     minimum_gust_turn_periodicity = length_of_gusts * len(rock_dictionary)
 
-    for starting_rock_turn in range(0, min(minimum_gust_turn_periodicity * 3, len(gust_turn_and_height_per_rock_turn)), 1):
-        print(
-            f"Trying to start periodicity at starting point {starting_rock_turn}, "
-            f"which is {gust_turn_and_height_per_rock_turn[starting_rock_turn + 1]}"
-        )
+    for rock_turn_periodicity in range(5, minimum_gust_turn_periodicity * 5, 5):
+        print(f"Trying to check rock turn periodicity of {rock_turn_periodicity}")
 
-        for rock_turn_periodicity in range(5, minimum_gust_turn_periodicity, 5):
-            print(f"Trying to check rock turn periodicity of {rock_turn_periodicity}")
-
+        for starting_rock_turn in range(
+            0,
+            min(minimum_gust_turn_periodicity * 3, len(gust_turn_and_height_per_rock_turn) - rock_turn_periodicity - 1),
+            1
+        ):
             this = diffs_of_heights_per_gust_turn[starting_rock_turn:starting_rock_turn + rock_turn_periodicity]
             next = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity: starting_rock_turn + rock_turn_periodicity + rock_turn_periodicity]
 
             total_gust_turns = sum(turn for turn, height in this)
             total_height = sum(height for turn, height in this)
 
-            if total_gust_turns < minimum_gust_turn_periodicity:
-                # print(f"Height {total_height} in {total_gust_turns} gust turns is too low. Continuing.")
+            if total_gust_turns % length_of_gusts != 0:
+                print(f"Height {total_height} in {total_gust_turns} gust turns "
+                      f"when starting at {starting_rock_turn} for periodicity {rock_turn_periodicity} "
+                      f"is not multiple of {length_of_gusts}. Continuing.")
                 continue
-
-            if total_gust_turns > minimum_gust_turn_periodicity * 3:
-                print(f"Height {total_height} in {total_gust_turns} gust turns is way too high. Continuing.")
-                break
 
             if this == next:
                 print(
@@ -322,11 +275,12 @@ def part_1(is_test: bool) -> int:
 
 
 def part_2(is_test: bool) -> int:
-    rock_turn_max_value = 2022  #1000000000000
+    rock_turn_max_value = 1000000000000
 
     data = load_data(DAY, parser, "data", is_test=is_test)
     length_of_gusts = len(data[0])
-    chamber, gust_turn_and_height_per_rock_turn = process_data(data[0], stopped_rocks=2022)
+    chamber, gust_turn_and_height_per_rock_turn = process_data(data[0], stopped_rocks=2022 if is_test else 5000)
+
     starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns = find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts)
 
     height_until_periodicity_starts = gust_turn_and_height_per_rock_turn[starting_rock_turn][1]
@@ -356,6 +310,6 @@ def part_2(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = True
+    is_test = False
     # print(f"Day {DAY} result 1: {part_1(is_test)}")
     print(f"Day {DAY} result 2: {part_2(is_test)}")

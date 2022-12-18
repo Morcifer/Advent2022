@@ -221,52 +221,69 @@ def find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gust
         in zip(gust_turn_and_height_per_rock_turn[:-1], gust_turn_and_height_per_rock_turn[1:])
     ]
 
-    maximum_rock_periodicity = length_of_gusts * len(rock_dictionary) * 2  # It's probably without the two, but who knows.
+    for expected_gust_periodicity in range(length_of_gusts, 5 * length_of_gusts + 1, length_of_gusts):
+        starting_rock_turn = 0
+        rock_turn_periodicity = 0
 
-    for rock_turn_periodicity in range(5, maximum_rock_periodicity, 5):
-        print(f"Checking rock turn periodicity of {rock_turn_periodicity}")
+        total_height = 0
+        total_gust_turns = 0
 
-        for starting_rock_turn in range(
-            min(
-                maximum_rock_periodicity,
-                len(gust_turn_and_height_per_rock_turn) - rock_turn_periodicity - 1,
-            )
-        ):
-            this = diffs_of_heights_per_gust_turn[starting_rock_turn : starting_rock_turn + rock_turn_periodicity]
-            next = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity : starting_rock_turn + rock_turn_periodicity + rock_turn_periodicity]
+        while starting_rock_turn + rock_turn_periodicity * 2 < len(diffs_of_heights_per_gust_turn):
+            # Increase periodicity until you go _over_ the desired length
+            while total_gust_turns < expected_gust_periodicity:
+                start = starting_rock_turn + rock_turn_periodicity
+                end = start + 5
+                to_add = diffs_of_heights_per_gust_turn[start:end]
 
-            total_gust_turns = sum(turn for turn, height in this)
-            total_height = sum(height for turn, height in this)
+                rock_turn_periodicity += 5
 
-            if total_gust_turns % length_of_gusts != 0:
-            #     print(f"Height {total_height} in {total_gust_turns} gust turns "
-            #           f"when starting at {starting_rock_turn} for periodicity {rock_turn_periodicity} "
-            #           f"is not multiple of {length_of_gusts}. "
-            #           f"The search continues."
-            #           )
-                continue
+                total_gust_turns += sum(gust for gust, height in to_add)
+                total_height += sum(height for gust, height in to_add)
 
-            if this == next:
-                print(
-                    f"Found possible periodicity! "
-                    f"It starts at {starting_rock_turn} with rock periodicity {rock_turn_periodicity} "
-                    f"and has height {total_height} after {total_gust_turns} gust turns!"
-                )
+            # Then decrease until you're either equal or right below.
+            while total_gust_turns > expected_gust_periodicity:
+                end = starting_rock_turn + rock_turn_periodicity
+                start = end - 5
+                to_remove = diffs_of_heights_per_gust_turn[start:end]
 
-                starting_gust_turn, starting_height = gust_turn_and_height_per_rock_turn[starting_rock_turn]
+                rock_turn_periodicity -= 5
 
-                valid = True
+                total_gust_turns -= sum(gust for gust, height in to_remove)
+                total_height -= sum(height for gust, height in to_remove)
 
-                for height in range(starting_height + 1, starting_height + total_height + 1):
-                    if chamber[height] != chamber[height + total_height]:
-                        valid = False
-                        break
+            if total_gust_turns == expected_gust_periodicity:
+                this = diffs_of_heights_per_gust_turn[starting_rock_turn : starting_rock_turn + rock_turn_periodicity]
+                next = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity : starting_rock_turn + rock_turn_periodicity + rock_turn_periodicity]
 
-                if valid:
-                    print(f"Periodicity validated!")
-                    return starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns
-                else:
-                    print(f"Validation failed at heights {height} and {height + total_height}. The search continues.")
+                if this == next:
+                    print(
+                        f"Found possible periodicity! "
+                        f"It starts at {starting_rock_turn} with rock periodicity {rock_turn_periodicity} "
+                        f"and has height {total_height} after {total_gust_turns} gust turns!"
+                    )
+
+                    starting_gust_turn, starting_height = gust_turn_and_height_per_rock_turn[starting_rock_turn]
+
+                    valid = True
+
+                    for height in range(starting_height + 1, starting_height + total_height + 1):
+                        if chamber[height] != chamber[height + total_height]:
+                            valid = False
+                            break
+
+                    if valid:
+                        print(f"Periodicity validated!")
+                        return starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns
+                    else:
+                        print(f"Validation failed at heights {height} and {height + total_height}. The search continues.")
+
+            # No luck. Move to next start of rock turn!
+            old = diffs_of_heights_per_gust_turn[starting_rock_turn]
+            new = diffs_of_heights_per_gust_turn[starting_rock_turn + rock_turn_periodicity]
+            starting_rock_turn += 1
+
+            total_gust_turns = total_gust_turns - old[0] + new[0]
+            total_height = total_height - old[1] + new[1]
 
     print("I failed at finding periodicity. Maybe increase the number of rocks allowed to fall?")
     return None
@@ -282,7 +299,7 @@ def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
     results = {}
 
-    chamber, gust_turn_and_height_per_rock_turn = process_data(data[0], stopped_rocks=2022 if is_test else 5000)
+    chamber, gust_turn_and_height_per_rock_turn = process_data(data[0], stopped_rocks=400 if is_test else 5000)
 
     length_of_gusts = len(data[0])
     starting_rock_turn, rock_turn_periodicity, total_height, total_gust_turns = find_periodicity(chamber, gust_turn_and_height_per_rock_turn, length_of_gusts)

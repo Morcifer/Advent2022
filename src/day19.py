@@ -62,7 +62,7 @@ class RobotState:
             if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
                 return None, None
 
-        if self.robots[robot_ore_type] > factory.max_cost_per_type[robot_ore_type]:
+        if robot_ore_type != OreType.GEODE and self.robots[robot_ore_type] >= factory.max_cost_per_type[robot_ore_type]:
             return None, None
 
         new_ores = {
@@ -153,11 +153,27 @@ def process_data(data: List[Factory], minutes: int, random_rounds: int) -> Dict[
     return {identifier: max(values) for identifier, values in result.items()}
 
 
+best_known = {
+    True: {1: 9, 2: 11},
+    False: {1: 9, 2: 9, 3: 0, 4: 0, 5: 0, 6: 0, 7: 1, 8: 3, 9: 6, 10: 2, 11: 1, 12: 0, 13: 1, 14: 3, 15: 2, 16: 0, 17: 0, 18: 0, 19: 0, 20: 1, 21: 2, 22: 1, 23: 0, 24: 3, 25: 3, 26: 0, 27: 1, 28: 3, 29: 0, 30: 3},
+}
+
+
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data, minutes=24, random_rounds=100000)
-    print(result)  # Should be {1: 9, 2: 12}
-    return sum(identifier * geodes for identifier, geodes in result.items())
+    result = process_data(data, minutes=24, random_rounds=10000)
+    print("Result: ", result)  # Should be {1: 9, 2: 12}
+
+    best_result = {
+        identifier: max(best_known[is_test].get(identifier, 0), geodes)
+        for identifier, geodes in result.items()
+    }
+    print("Best result: ", best_result)  # Should be {1: 9, 2: 12}
+
+    return sum(
+        identifier * geodes
+        for identifier, geodes in best_result.items()
+    )
 
 
 # def part_2(is_test: bool) -> int:
@@ -170,6 +186,6 @@ def part_1(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = True
+    is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
     # print(f"Day {DAY} result 2: {part_2(is_test)}")

@@ -17,10 +17,11 @@ def flatten(sequence):
 
 
 class OreType(Enum):
-    ORE = 0,
-    CLAY = 1,
-    OBSIDIAN = 2,
-    GEODE = 3,
+    NONE = 0,
+    ORE = 1,
+    CLAY = 2,
+    OBSIDIAN = 3,
+    GEODE = 4,
 
     @classmethod
     def all_ore_types(cls) -> List['OreType']:
@@ -31,6 +32,13 @@ class OreType(Enum):
 class Factory:
     identifier: int
     robot_costs: Dict[OreType, Dict[OreType, int]]
+
+    @property
+    def max_cost_per_type(self):
+        return {
+            cost_ore_type: max(robot_costs.get(cost_ore_type, 0) for _, robot_costs in self.robot_costs.items())
+            for cost_ore_type in OreType.all_ore_types()
+        }
 
 
 @dataclass
@@ -54,10 +62,7 @@ class RobotState:
             if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
                 return None, None
 
-        if self.robots[OreType.CLAY] == 0 and (robot_ore_type == OreType.OBSIDIAN or robot_ore_type == OreType.GEODE):
-            return None, None
-
-        if robot_ore_type == OreType.GEODE and self.robots[OreType.OBSIDIAN] == 0:
+        if self.robots[robot_ore_type] > factory.max_cost_per_type[robot_ore_type]:
             return None, None
 
         new_ores = {
@@ -69,7 +74,7 @@ class RobotState:
         new_robots = self.robots.copy()
         new_robots[robot_ore_type] += 1
 
-        return new_robots, new_ores
+        return new_ores, new_robots
 
 
 def parser(s: List[str]) -> Factory:
@@ -96,35 +101,52 @@ default_robots = {
 }
 
 
-def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
+def process_data(data: List[Factory], minutes: int, random_rounds: int) -> Dict[int, int]:
     result = {}
 
     for factory in data:
-        print(f"Working on factory {factory.identifier}")
         result[factory.identifier] = []
 
-        for random_id in range(1000):
+        for random_id in range(random_rounds):
+            if random_id % 10000 == 1:
+                print(
+                    f"Working on factory {factory.identifier} "
+                    f"run {random_id} out of {random_rounds}, "
+                    f"best thus far is {max(result[factory.identifier])}"
+                )
+
             money_state = {ore_type: 0 for ore_type in OreType.all_ore_types()}
             robot_state = RobotState(robots=default_robots.copy())
 
             for minute in range(minutes):
                 # print(f"Working minute {minute} for factory {factory.identifier}, random game id {random_id}")
 
-                # Each robot can collect 1 of its resource type per minute.
-                money_state = robot_state.get_extra_ores(money_state)
-
                 # Do nothing
-                possible_new_states = [(money_state, robot_state)]
+                possible_new_states = {OreType.NONE: (money_state, robot_state)}
 
+                # Build robot
                 for robot_ore_type in OreType.all_ore_types():
-                    new_robots, new_ores = robot_state.make_one_robot(robot_ore_type, money_state, factory)
+                    new_ores, new_robots = robot_state.make_one_robot(robot_ore_type, money_state, factory)
 
                     if new_robots is not None:
-                        new_game_state = (new_ores, RobotState(robots=new_robots))
-                        possible_new_states.append(new_game_state)
+                        new_state = (new_ores, RobotState(robots=new_robots))
+                        possible_new_states[robot_ore_type] = new_state
 
-                random_draw = random.sample(possible_new_states, 1)[0]
-                money_state, robot_state = random_draw
+                possible_new_states = {
+                    robot_ore_type: (robot_state.get_extra_ores(new_money_state), new_robot_state)
+                    for robot_ore_type, (new_money_state, new_robot_state)
+                    in possible_new_states.items()
+                }
+
+                if OreType.GEODE in possible_new_states.keys():
+                    money_state, robot_state = possible_new_states[OreType.GEODE]
+                elif len(possible_new_states) == 5:
+                    possible_new_states.pop(OreType.NONE)
+                    random_draw = random.sample(list(possible_new_states.values()), 1)[0]
+                    money_state, robot_state = random_draw
+                else:
+                    random_draw = random.sample(list(possible_new_states.values()), 1)[0]
+                    money_state, robot_state = random_draw
 
             result[factory.identifier].append(money_state[OreType.GEODE])
 
@@ -133,7 +155,7 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data, minutes=24)
+    result = process_data(data, minutes=24, random_rounds=100000)
     print(result)  # Should be {1: 9, 2: 12}
     return sum(identifier * geodes for identifier, geodes in result.items())
 

@@ -154,14 +154,14 @@ def process_data(data: List[Factory], minutes: int, random_rounds: int) -> Dict[
 
 
 best_known = {
-    True: {1: 9, 2: 11},
-    False: {1: 9, 2: 9, 3: 0, 4: 0, 5: 0, 6: 0, 7: 1, 8: 3, 9: 6, 10: 2, 11: 1, 12: 0, 13: 1, 14: 3, 15: 2, 16: 0, 17: 0, 18: 0, 19: 0, 20: 1, 21: 2, 22: 1, 23: 0, 24: 3, 25: 3, 26: 0, 27: 1, 28: 3, 29: 0, 30: 3},
+    True: {1: 9, 2: 12},
+    False: {1: 9, 2: 9, 3: 0, 4: 0, 5: 0, 6: 1, 7: 1, 8: 5, 9: 6, 10: 2, 11: 1, 12: 0, 13: 1, 14: 5, 15: 3, 16: 0, 17: 0, 18: 0, 19: 0, 20: 1, 21: 2, 22: 1, 23: 0, 24: 3, 25: 3, 26: 0, 27: 1, 28: 3, 29: 0, 30: 3}
 }
 
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data, minutes=24, random_rounds=10000)
+    result = process_data(data, minutes=24, random_rounds=100000)
     print("Result: ", result)  # Should be {1: 9, 2: 12}
 
     best_result = {
@@ -170,7 +170,7 @@ def part_1(is_test: bool) -> int:
     }
     print("Best result: ", best_result)  # Should be {1: 9, 2: 12}
 
-    return sum(
+    return sum(  # 725 is best right now. But it's pretty bad.
         identifier * geodes
         for identifier, geodes in best_result.items()
     )

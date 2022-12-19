@@ -21,8 +21,9 @@ class OreType(Enum):
     OBSIDIAN = 2,
     GEODE = 3,
 
-    def all_ore_types(self) -> List['OreType']:
-        return [self.ORE, self.CLAY, self.OBSIDIAN, self.GEODE]
+    @classmethod
+    def all_ore_types(cls) -> List['OreType']:
+        return [cls.ORE, cls.CLAY, cls.OBSIDIAN, cls.GEODE]
 
 
 @dataclass
@@ -33,30 +34,35 @@ class Factory:
 
 @dataclass
 class RobotState:
-    robots = {
-        OreType.ORE: 1,
-        OreType.CLAY: 0,
-        OreType.OBSIDIAN: 0,
-        OreType.GEODE: 0,
-    }
+    robots: dict
 
     def get_extra_ores(self, old_ores: dict) -> dict:
-        return {ore_type: old_amount + self.robots[ore_type] for ore_type, old_amount in old_ores}
+        return {
+            ore_type: old_amount + self.robots[ore_type]
+            for ore_type, old_amount
+            in old_ores.items()
+        }
 
     def make_one_robot(
         self,
         robot_ore_type: OreType,
         old_ores: dict,
         factory: Factory
-    ) -> Tuple[Optional[dict], dict]:
-        for cost_ore_type in robot_ore_type.all_ore_types():
-            if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type][cost_ore_type]:
-                return None, old_ores.copy()
+    ) -> Tuple[Optional[dict], Optional[dict]]:
+        for cost_ore_type in OreType.all_ore_types():
+            if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
+                return None, None
+
+        if self.robots[OreType.CLAY] == 0 and (robot_ore_type == OreType.OBSIDIAN or robot_ore_type == OreType.GEODE):
+            return None, None
+
+        if robot_ore_type == OreType.GEODE and self.robots[OreType.OBSIDIAN] == 0:
+            return None, None
 
         new_ores = {
-            cost_ore_type: amount_old_ore - factory.robot_costs[robot_ore_type][cost_ore_type]
+            cost_ore_type: amount_old_ore - factory.robot_costs[robot_ore_type].get(cost_ore_type, 0)
             for cost_ore_type, amount_old_ore
-            in old_ores
+            in old_ores.items()
         }
 
         new_robots = self.robots.copy()
@@ -81,14 +87,51 @@ def parser(s: List[str]) -> Factory:
     )
 
 
-def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
-    for factory in data:
-        # Each robot can collect 1 of its resource type per minute.
-        # It also takes one minute for the robot factory (also conveniently from your pack) to construct any type of robot,
-        # although it consumes the necessary resources available when construction begins.
+default_robots = {
+    OreType.ORE: 1,
+    OreType.CLAY: 0,
+    OreType.OBSIDIAN: 0,
+    OreType.GEODE: 0,
+}
 
-        print(factory)
-    return {}
+
+def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
+    result = {}
+
+    for factory in data:
+        game_states = [
+            (
+                {ore_type: 0 for ore_type in OreType.all_ore_types()},
+                RobotState(robots=default_robots)
+            )
+        ]
+
+        for minute in range(minutes):
+            print(f"Working minute {minute} for factory {factory.identifier}")
+            new_game_states = []
+            # explored_game_states = set()
+            for money_state, robot_state in game_states:
+                # Each robot can collect 1 of its resource type per minute.
+                money_state = robot_state.get_extra_ores(money_state)
+                new_game_states.append((money_state, robot_state))
+
+                # It also takes one minute for the robot factory to construct any type of robot,
+                for robot_ore_type in OreType.all_ore_types():
+                    new_robots, new_ores = robot_state.make_one_robot(robot_ore_type, money_state, factory)
+
+                    if new_robots is not None:
+                        new_game_state = (new_ores, RobotState(robots=new_robots))
+                        new_game_states.append(new_game_state)
+
+            game_states = new_game_states
+
+        result[factory.identifier] = max(
+            ores[OreType.GEODE]
+            for ores, _
+            in game_states
+        )
+
+    return result
 
 
 def part_1(is_test: bool) -> int:

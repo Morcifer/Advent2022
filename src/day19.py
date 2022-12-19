@@ -1,5 +1,6 @@
 import itertools
 import math
+import random
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
@@ -99,45 +100,42 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
     result = {}
 
     for factory in data:
-        game_states = [
-            (
-                {ore_type: 0 for ore_type in OreType.all_ore_types()},
-                RobotState(robots=default_robots)
-            )
-        ]
+        print(f"Working on factory {factory.identifier}")
+        result[factory.identifier] = []
 
-        for minute in range(minutes):
-            print(f"Working minute {minute} for factory {factory.identifier}")
-            new_game_states = []
-            # explored_game_states = set()
-            for money_state, robot_state in game_states:
+        for random_id in range(1000):
+            money_state = {ore_type: 0 for ore_type in OreType.all_ore_types()}
+            robot_state = RobotState(robots=default_robots.copy())
+
+            for minute in range(minutes):
+                # print(f"Working minute {minute} for factory {factory.identifier}, random game id {random_id}")
+
                 # Each robot can collect 1 of its resource type per minute.
                 money_state = robot_state.get_extra_ores(money_state)
-                new_game_states.append((money_state, robot_state))
 
-                # It also takes one minute for the robot factory to construct any type of robot,
+                # Do nothing
+                possible_new_states = [(money_state, robot_state)]
+
                 for robot_ore_type in OreType.all_ore_types():
                     new_robots, new_ores = robot_state.make_one_robot(robot_ore_type, money_state, factory)
 
                     if new_robots is not None:
                         new_game_state = (new_ores, RobotState(robots=new_robots))
-                        new_game_states.append(new_game_state)
+                        possible_new_states.append(new_game_state)
 
-            game_states = new_game_states
+                random_draw = random.sample(possible_new_states, 1)[0]
+                money_state, robot_state = random_draw
 
-        result[factory.identifier] = max(
-            ores[OreType.GEODE]
-            for ores, _
-            in game_states
-        )
+            result[factory.identifier].append(money_state[OreType.GEODE])
 
-    return result
+    return {identifier: max(values) for identifier, values in result.items()}
 
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
     result = process_data(data, minutes=24)
-    return sum(identifier * geodes for identifier, geodes  in result)
+    print(result)  # Should be {1: 9, 2: 12}
+    return sum(identifier * geodes for identifier, geodes in result.items())
 
 
 # def part_2(is_test: bool) -> int:

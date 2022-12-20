@@ -51,6 +51,13 @@ class RobotState:
 
         return f"{robots_str}_{ore_amount_str}"
 
+    def get_minute_hash_str(self, minute, ore_amount):
+        minute_str = str(minute)
+        robots_str = "-".join(str(self.robots[ore_type]) for ore_type in OreType.all_ore_types())
+        ore_amount_str = "-".join(str(ore_amount[ore_type]) for ore_type in OreType.all_ore_types())
+
+        return f"{minute_str}_{robots_str}_{ore_amount_str}"
+
     def get_extra_ores(self, old_ores: dict) -> dict:
         return {
             ore_type: old_amount + self.robots[ore_type]
@@ -63,16 +70,22 @@ class RobotState:
         robot_ore_type: OreType,
         old_ores: dict,
         factory: Factory
-    ) -> Tuple[Optional[dict], Optional[dict]]:
+    ) -> Optional[Tuple[int, dict, dict]]:
+        max_turns = 0
+
         for cost_ore_type in OreType.all_ore_types():
             if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
-                return None
+                if self.robots[cost_ore_type] >= 1:
+                    turns_for_this_ore = 1.0 * factory.robot_costs[robot_ore_type].get(cost_ore_type, 0) / self.robots[cost_ore_type]
+                    max_turns = max(max_turns, int(math.ceil(turns_for_this_ore)))
+                else:
+                    return None
 
         if robot_ore_type != OreType.GEODE and self.robots[robot_ore_type] >= factory.max_cost_per_type[robot_ore_type]:
-            return None, None
+            return None
 
         new_ores = {
-            cost_ore_type: amount_old_ore - factory.robot_costs[robot_ore_type].get(cost_ore_type, 0)
+            cost_ore_type: amount_old_ore + self.robots[cost_ore_type] * max_turns - factory.robot_costs[robot_ore_type].get(cost_ore_type, 0)
             for cost_ore_type, amount_old_ore
             in old_ores.items()
         }
@@ -80,7 +93,7 @@ class RobotState:
         new_robots = self.robots.copy()
         new_robots[robot_ore_type] += 1
 
-        return new_ores, new_robots
+        return max_turns, new_ores, new_robots
 
 
 def parser(s: List[str]) -> Factory:
@@ -117,71 +130,75 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
         money_state = {ore_type: 0 for ore_type in OreType.all_ore_types()}
         robot_state = RobotState(robots=default_robots.copy())
 
-        states_to_check = [(money_state, robot_state)]
+        states_to_check = [(0, money_state, robot_state)]
+        checked_hashes = set()
+        finished_states = []
 
-        for minute in range(minutes):
-            checked = set()
-            new_states_to_check = []
+        best_state_per_minutes = {}
+        best_geode = 0
 
-            best_money = {ore_type: 0 for ore_type in OreType.all_ore_types()}
-            best_robots = {ore_type: 0 for ore_type in OreType.all_ore_types()}
+        while len(states_to_check) > 0:
+            minute, money_state, robot_state = states_to_check.pop(-1)
+            hash_to_check = robot_state.get_minute_hash_str(minute, money_state)
 
-            for money_state, robot_state in states_to_check:
-                hash_to_check = robot_state.get_hash_str(money_state)
+            if hash_to_check in checked_hashes:
+                continue
 
-                if hash_to_check in checked:
+            checked_hashes.add(hash_to_check)
+
+            if minute > minutes:
+                continue
+
+            if minute == minutes:
+                finished_states.append(money_state)
+
+                if money_state[OreType.GEODE] > best_geode:
+                    print(f"Still {len(states_to_check)} to check, current best geode is {money_state[OreType.GEODE]}")
+
+                best_geode = max(best_geode, money_state[OreType.GEODE])
+                continue
+
+            if minute not in best_state_per_minutes:
+                best_state_per_minutes[minute] = (money_state, robot_state)
+            else:
+                best_money_state, best_robot_state = best_state_per_minutes[minute]
+
+                if all(
+                    money_state[ore_type] >= best_money_state[ore_type] and robot_state.robots[ore_type] >= best_robot_state.robots[ore_type]
+                    for ore_type in OreType.all_ore_types()
+                ):
+                    best_state_per_minutes[minute] = (money_state, robot_state)
+                elif all(
+                        money_state[ore_type] <= best_money_state[ore_type] and robot_state.robots[ore_type] <= best_robot_state.robots[ore_type]
+                        for ore_type in OreType.all_ore_types()
+                ):
                     continue
 
-                checked.add(hash_to_check)
+            # Build robots
+            robot_options = {}
 
-                this_is_worse = []
-                this_is_better = []
+            for robot_ore_type in OreType.all_ore_types():
+                new_possibility = robot_state.make_one_robot(robot_ore_type, money_state, factory)
 
-                for ore_type in OreType.all_ore_types():
-                    if money_state[ore_type] <= best_money[ore_type] and robot_state.robots[ore_type] <= best_robots[ore_type]:
-                        this_is_worse.append(True)
-
-                    if money_state[ore_type] >= best_money[ore_type] and robot_state.robots[ore_type] >= best_robots[ore_type]:
-                        this_is_better.append(True)
-
-                if len(this_is_worse) == 4:
+                if new_possibility is None:  # Not enough money
                     continue
+                else:
+                    extra_turns, new_ores, new_robots = new_possibility
 
-                if len(this_is_better) == 4:
-                    best_money = money_state.copy()
-                    best_robots = robot_state.robots.copy()
-
-                # Build robot
-                this_state_robot_possibilities = 0
-                
-                for robot_ore_type in OreType.all_ore_types():
-                    new_possibility = robot_state.make_one_robot(robot_ore_type, money_state, factory)
-
-                    if new_possibility is None:
-                        continue
-                    else:
-                        this_state_robot_possibilities += 1
-                        new_ores, new_robots = new_possibility
-
-                        if new_robots is not None:
-                            new_state = (
-                                robot_state.get_extra_ores(new_ores),
-                                RobotState(robots=new_robots)
-                            )
-                            new_states_to_check.append(new_state)
-
-                # Do nothing
-                if this_state_robot_possibilities < 4:
-                    new_states_to_check.append(
-                        (
-                            robot_state.get_extra_ores(money_state),
-                            RobotState(robots=robot_state.robots)
+                    if new_robots is not None:  # This is a good robot to build
+                        new_state = (
+                            minute + extra_turns + 1,
+                            robot_state.get_extra_ores(new_ores),
+                            RobotState(robots=new_robots)
                         )
-                    )
+                        robot_options[robot_ore_type] = new_state
 
-            states_to_check = new_states_to_check
+            if OreType.GEODE in robot_options and robot_options[OreType.GEODE][0] == minute + 1:
+                states_to_check.append(robot_options[OreType.GEODE])
+            else:
+                states_to_check.extend(robot_options.values())
 
-        result[factory.identifier] = max(money[OreType.GEODE] for money, robots in states_to_check)
+        result[factory.identifier] = max(money[OreType.GEODE] for money in finished_states)
 
     return result
 

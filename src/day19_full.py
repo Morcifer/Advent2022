@@ -25,7 +25,7 @@ class OreType(Enum):
 
     @classmethod
     def all_ore_types(cls) -> List['OreType']:
-        return [cls.ORE, cls.CLAY, cls.OBSIDIAN, cls.GEODE]
+        return [cls.GEODE, cls.ORE, cls.CLAY, cls.OBSIDIAN]
 
 
 @dataclass
@@ -66,7 +66,7 @@ class RobotState:
     ) -> Tuple[Optional[dict], Optional[dict]]:
         for cost_ore_type in OreType.all_ore_types():
             if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
-                return None, None
+                return None
 
         if robot_ore_type != OreType.GEODE and self.robots[robot_ore_type] >= factory.max_cost_per_type[robot_ore_type]:
             return None, None
@@ -111,6 +111,7 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
     result = {}
 
     for factory in data:
+        print(f"Factory {factory.identifier}, results thus far {result}")
         result[factory.identifier] = []
 
         money_state = {ore_type: 0 for ore_type in OreType.all_ore_types()}
@@ -119,10 +120,11 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
         states_to_check = [(money_state, robot_state)]
 
         for minute in range(minutes):
-            print(f"Minute {minute} for factory {factory.identifier}")
-
             checked = set()
             new_states_to_check = []
+
+            best_money = {ore_type: 0 for ore_type in OreType.all_ore_types()}
+            best_robots = {ore_type: 0 for ore_type in OreType.all_ore_types()}
 
             for money_state, robot_state in states_to_check:
                 hash_to_check = robot_state.get_hash_str(money_state)
@@ -132,24 +134,50 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
 
                 checked.add(hash_to_check)
 
-                # Do nothing
-                new_states_to_check.append(
-                    (
-                        robot_state.get_extra_ores(money_state),
-                        robot_state
-                    )
-                )
+                this_is_worse = []
+                this_is_better = []
+
+                for ore_type in OreType.all_ore_types():
+                    if money_state[ore_type] <= best_money[ore_type] and robot_state.robots[ore_type] <= best_robots[ore_type]:
+                        this_is_worse.append(True)
+
+                    if money_state[ore_type] >= best_money[ore_type] and robot_state.robots[ore_type] >= best_robots[ore_type]:
+                        this_is_better.append(True)
+
+                if len(this_is_worse) == 4:
+                    continue
+
+                if len(this_is_better) == 4:
+                    best_money = money_state.copy()
+                    best_robots = robot_state.robots.copy()
 
                 # Build robot
+                this_state_robot_possibilities = 0
+                
                 for robot_ore_type in OreType.all_ore_types():
-                    new_ores, new_robots = robot_state.make_one_robot(robot_ore_type, money_state, factory)
+                    new_possibility = robot_state.make_one_robot(robot_ore_type, money_state, factory)
 
-                    if new_robots is not None:
-                        new_state = (
-                            robot_state.get_extra_ores(new_ores),
-                            RobotState(robots=new_robots)
+                    if new_possibility is None:
+                        continue
+                    else:
+                        this_state_robot_possibilities += 1
+                        new_ores, new_robots = new_possibility
+
+                        if new_robots is not None:
+                            new_state = (
+                                robot_state.get_extra_ores(new_ores),
+                                RobotState(robots=new_robots)
+                            )
+                            new_states_to_check.append(new_state)
+
+                # Do nothing
+                if this_state_robot_possibilities < 4:
+                    new_states_to_check.append(
+                        (
+                            robot_state.get_extra_ores(money_state),
+                            RobotState(robots=robot_state.robots)
                         )
-                        new_states_to_check.append(new_state)
+                    )
 
             states_to_check = new_states_to_check
 
@@ -161,23 +189,24 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
     result = process_data(data, minutes=24)
-    print("Result: ", result)  # Should be {1: 9, 2: 12}
+    print("Result: ", result)  # Test should be {1: 9, 2: 12}
 
-    return sum(  # 725 is best right now. But it's pretty bad.
+    return sum(
         identifier * geodes
         for identifier, geodes in result.items()
     )
 
-# def part_2(is_test: bool) -> int:
-#     data = load_data(DAY, parser, "data", is_test=is_test)
-#     all_surface_area = process_data(data)
-#     internal_cubes = process_data_2(data)
-#     internal_surface_area = process_data(internal_cubes)
-#
-#     return all_surface_area - internal_surface_area
+
+def part_2(is_test: bool) -> int:
+    data = load_data(DAY, parser, "data", is_test=is_test)
+
+    result = process_data(data[:3], minutes=32)
+    print("Result: ", result)  # Test should be {1: 56, 2: 62}
+
+    return result.get(1, 1) * result.get(2, 1) * result.get(3, 1)
 
 
 if __name__ == '__main__':
-    is_test = True
-    print(f"Day {DAY} result 1: {part_1(is_test)}")
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    is_test = False
+    print(f"Day {DAY} result 1: {part_1(is_test)}")  # part 1: 817, part 2: 4216
+    print(f"Day {DAY} result 2: {part_2(is_test)}")

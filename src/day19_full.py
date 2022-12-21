@@ -76,7 +76,7 @@ class RobotState:
         for cost_ore_type in OreType.all_ore_types():
             if old_ores[cost_ore_type] < factory.robot_costs[robot_ore_type].get(cost_ore_type, 0):
                 if self.robots[cost_ore_type] >= 1:
-                    turns_for_this_ore = 1.0 * factory.robot_costs[robot_ore_type].get(cost_ore_type, 0) / self.robots[cost_ore_type]
+                    turns_for_this_ore = 1.0 * (factory.robot_costs[robot_ore_type].get(cost_ore_type, 0) - old_ores[cost_ore_type]) / self.robots[cost_ore_type]
                     max_turns = max(max_turns, int(math.ceil(turns_for_this_ore)))
                 else:
                     return None
@@ -185,7 +185,7 @@ def process_data(data: List[Factory], minutes: int) -> Dict[int, int]:
                 else:
                     extra_turns, new_ores, new_robots = new_possibility
 
-                    if new_robots is not None:  # This is a good robot to build
+                    if new_robots is not None:
                         new_state = (
                             minute + extra_turns + 1,
                             robot_state.get_extra_ores(new_ores),
@@ -224,6 +224,6 @@ def part_2(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = False
+    is_test = True
     print(f"Day {DAY} result 1: {part_1(is_test)}")  # part 1: 817, part 2: 4216
-    print(f"Day {DAY} result 2: {part_2(is_test)}")
+    # print(f"Day {DAY} result 2: {part_2(is_test)}")

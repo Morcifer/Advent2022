@@ -19,106 +19,84 @@ def parser(s: List[str]) -> Tuple[str, Union[int, Tuple[str, str, str]]]:
 
 
 def process_data(data: List[int]):
-    commands = {monkey: command for monkey, command in data}
-
-    nodes = {monkey: command if isinstance(command, int) else command[1] for monkey, command in commands.items()}
-    edges = {monkey: [] for monkey in commands.keys()}
-
-    leaves = {}
-
-    for monkey, command in commands.items():
-        if isinstance(command, int):
-            leaves[monkey] = command
-        else:
-            edges[monkey].append(command[0])
-            edges[monkey].append(command[2])
-
-    return nodes, edges
+    return {monkey: command for monkey, command in data}
 
 
-def process_data_2(nodes, edges):
-    nodes["humn"] = "x"
-    nodes["root"] = "=="
+def process_data_2(commands):
+    commands["humn"] = "x"
 
     split_monkey = "root"
 
-    branches = edges[split_monkey]
-    left_value = find_value_of_monkey(nodes, edges, branches[0])
-    right_value = find_value_of_monkey(nodes, edges, branches[1])
+    left_value = find_value_of_monkey(commands, commands[split_monkey][0])
+    right_value = find_value_of_monkey(commands, commands[split_monkey][2])
 
     value_to_equal = left_value if isinstance(left_value, int) else right_value
-    node_to_check = branches[1] if value_to_equal == left_value else branches[0]
+    monkey_to_check = commands[split_monkey][2] if value_to_equal == left_value else commands[split_monkey][0]
 
     while True:
-        branches = edges[node_to_check]
-        left_value = find_value_of_monkey(nodes, edges, branches[0])
-        right_value = find_value_of_monkey(nodes, edges, branches[1])
+        left_value = find_value_of_monkey(commands, commands[monkey_to_check][0])
+        right_value = find_value_of_monkey(commands, commands[monkey_to_check][2])
+
+        expression = commands[monkey_to_check][1]
 
         if isinstance(left_value, int):
-            if nodes[node_to_check] == "+":
+            if expression == "+":
                 value_to_equal -= left_value
-            elif nodes[node_to_check] == "*":
+            elif expression == "*":
                 value_to_equal = int(value_to_equal / left_value)
-            elif nodes[node_to_check] == "-":
+            elif expression == "-":
                 value_to_equal = left_value - value_to_equal
-            elif nodes[node_to_check] == "/":
+            elif expression == "/":
                 value_to_equal = int(left_value / value_to_equal)
 
             if right_value == "x":
                 return value_to_equal
 
-            node_to_check = branches[1]
+            monkey_to_check = commands[monkey_to_check][2]
         else:
-            if nodes[node_to_check] == "+":
+            if expression == "+":
                 value_to_equal -= right_value
-            elif nodes[node_to_check] == "*":
+            elif expression == "*":
                 value_to_equal = int(value_to_equal / right_value)
-            elif nodes[node_to_check] == "-":
+            elif expression == "-":
                 value_to_equal += right_value
-            elif nodes[node_to_check] == "/":
+            elif expression == "/":
                 value_to_equal *= right_value
 
             if left_value == "x":
                 return value_to_equal
 
-            node_to_check = branches[0]
+            monkey_to_check = commands[monkey_to_check][0]
 
 
-def find_value_of_monkey(nodes, edges, monkey):
-    if isinstance(nodes[monkey], int):
-        return nodes[monkey]
+def find_value_of_monkey(commands, monkey):
+    if isinstance(commands[monkey], int):
+        return commands[monkey]
 
     if monkey == "humn":
-        return nodes[monkey]
+        return commands[monkey]
 
-    branches = edges[monkey]
-    left_value = find_value_of_monkey(nodes, edges, branches[0])
-    right_value = find_value_of_monkey(nodes, edges, branches[1])
+    left_value = find_value_of_monkey(commands, commands[monkey][0])
+    right_value = find_value_of_monkey(commands, commands[monkey][2])
 
     if isinstance(left_value, int) and isinstance(right_value, int):
-        if nodes[monkey] == "+":
-            return left_value + right_value
-        elif nodes[monkey] == "*":
-            return left_value * right_value
-        elif nodes[monkey] == "-":
-            return left_value - right_value
-        elif nodes[monkey] == "/":
-            return int(left_value / right_value)
+        to_eval = f"{left_value}{commands[monkey][1]}{right_value}"
+        return int(eval(to_eval))
 
-    to_calculate = f"({left_value}){nodes[monkey]}({right_value})"
+    to_calculate = f"({left_value}){commands[monkey][1]}({right_value})"
     return to_calculate
 
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    nodes, edges = process_data(data)
-    return find_value_of_monkey(nodes, edges, "root")
+    commands = process_data(data)
+    return find_value_of_monkey(commands, "root")
 
 
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    nodes, edges = process_data(data)
-    result = process_data_2(nodes, edges)
+    commands = process_data(data)
+    result = process_data_2(commands)
     return result
 
 

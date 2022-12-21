@@ -224,6 +224,6 @@ def part_2(is_test: bool) -> int:
 
 
 if __name__ == '__main__':
-    is_test = True
+    is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")  # part 1: 817, part 2: 4216
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")

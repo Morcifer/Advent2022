@@ -37,34 +37,76 @@ def process_data(data: List[int]):
 
 
 def process_data_2(nodes, edges):
-    for value_to_yell in range(6000, 50000):
-        nodes["humn"] = value_to_yell
-        left_value = find_value_of_monkey(nodes, edges, edges["root"][0])
-        right_value = find_value_of_monkey(nodes, edges, edges["root"][1])
+    nodes["humn"] = "x"
+    nodes["root"] = "=="
 
-        if left_value == right_value:
-            return value_to_yell
+    split_monkey = "root"
 
-        if value_to_yell % 1000 == 0:
-            print(f"Yelling values up to {value_to_yell} didn't work.")
+    branches = edges[split_monkey]
+    left_value = find_value_of_monkey(nodes, edges, branches[0])
+    right_value = find_value_of_monkey(nodes, edges, branches[1])
 
-    return -1
+    value_to_equal = left_value if isinstance(left_value, int) else right_value
+    node_to_check = branches[1] if value_to_equal == left_value else branches[0]
+
+    while True:
+        branches = edges[node_to_check]
+        left_value = find_value_of_monkey(nodes, edges, branches[0])
+        right_value = find_value_of_monkey(nodes, edges, branches[1])
+
+        if isinstance(left_value, int):
+            if nodes[node_to_check] == "+":
+                value_to_equal -= left_value
+            elif nodes[node_to_check] == "*":
+                value_to_equal = int(value_to_equal / left_value)
+            elif nodes[node_to_check] == "-":
+                value_to_equal = left_value - value_to_equal
+            elif nodes[node_to_check] == "/":
+                value_to_equal = int(left_value / value_to_equal)
+
+            if right_value == "x":
+                return value_to_equal
+
+            node_to_check = branches[1]
+        else:
+            if nodes[node_to_check] == "+":
+                value_to_equal -= right_value
+            elif nodes[node_to_check] == "*":
+                value_to_equal = int(value_to_equal / right_value)
+            elif nodes[node_to_check] == "-":
+                value_to_equal += right_value
+            elif nodes[node_to_check] == "/":
+                value_to_equal *= right_value
+
+            if left_value == "x":
+                return value_to_equal
+
+            node_to_check = branches[0]
 
 
 def find_value_of_monkey(nodes, edges, monkey):
     if isinstance(nodes[monkey], int):
         return nodes[monkey]
 
+    if monkey == "humn":
+        return nodes[monkey]
+
     branches = edges[monkey]
     left_value = find_value_of_monkey(nodes, edges, branches[0])
     right_value = find_value_of_monkey(nodes, edges, branches[1])
 
-    to_eval = f"{left_value}{nodes[monkey]}{right_value}"
-    result = eval(to_eval)
+    if isinstance(left_value, int) and isinstance(right_value, int):
+        if nodes[monkey] == "+":
+            return left_value + right_value
+        elif nodes[monkey] == "*":
+            return left_value * right_value
+        elif nodes[monkey] == "-":
+            return left_value - right_value
+        elif nodes[monkey] == "/":
+            return int(left_value / right_value)
 
-    # print(f"monkey {monkey} has value {result}")
-
-    return result
+    to_calculate = f"({left_value}){nodes[monkey]}({right_value})"
+    return to_calculate
 
 
 def part_1(is_test: bool) -> int:

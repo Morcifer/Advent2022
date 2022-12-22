@@ -84,6 +84,11 @@ class Direction(Enum):
 
 
 def process_data(map: List[str], path: List[Union[str, int]]):
+    len_of_strings = max(len(row) for row in map)
+    for i in range(len(map)):
+        if len(map[i]) < len_of_strings:
+            map[i] = map[i] + "".join(" " for i in range(len(map[i]), len_of_strings))
+
     row = 0
     column = next(i for i, s in enumerate(map[0]) if s == ".")
     direction = Direction.RIGHT
@@ -145,7 +150,9 @@ def part_1(is_test: bool) -> int:
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", do_not_strip=True, is_test=is_test)
     result = process_data(data, parse_instructions(test_path if is_test else real_path))
-    return result
+
+    # The final password is the sum of 1000 times the row, 4 times the column, and the facing.
+    return 1000 * (result[0] + 1) + 4 * (result[1] + 1) + result[2].value
 
 
 if __name__ == '__main__':

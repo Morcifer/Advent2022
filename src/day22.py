@@ -257,7 +257,8 @@ def process_data_2(map: List[str], path: List[Union[str, int]]):
 
             side, column, row, direction = next_side, next_column, next_row, next_direction
 
-    return row, column, direction
+    absolute_column, absolute_row = side.get_absolute(column, row)
+    return absolute_row, absolute_column, direction
 
 
 
@@ -280,4 +281,4 @@ def part_2(is_test: bool) -> int:
 if __name__ == '__main__':
     is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
-    print(f"Day {DAY} result 2: {part_2(is_test)}")  # 6192 is too low.
+    print(f"Day {DAY} result 2: {part_2(is_test)}")  # 6192 is too low, 106396 is too high. 106392?

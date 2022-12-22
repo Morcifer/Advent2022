@@ -12,6 +12,7 @@ def load_data(
             ],
     data_folder: str,
     is_test: bool,
+    do_not_strip: bool = False,
     cluster_at_empty_line: bool = False,
 ) -> List[ResultType]:
     file_name = (
@@ -22,13 +23,13 @@ def load_data(
     with open(file_name) as f:
         content = f.readlines()
 
-    content = [x.strip() for x in content]
+    content = [x.replace("\n", "") if do_not_strip else x.strip() for x in content]
 
     parsed_data = []
     cluster = []
 
     for line_number, line in enumerate(content):
-        s = line.split(' ')
+        s = line if do_not_strip else line.split(' ')
         if not cluster_at_empty_line:
             parsed_data.append(parser(s))
             continue

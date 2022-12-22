@@ -83,6 +83,91 @@ class Direction(Enum):
                 return Direction.RIGHT
 
 
+class Side(Enum):
+    A = 0
+    B = 1
+    C = 2
+    D = 3
+    E = 4
+    F = 5
+
+
+    def get_absolute(self, column, row) -> Tuple[int, int]:
+        if self == self.A:
+            return column + 50, row
+        if self == self.B:
+            return column + 100, row
+        if self == self.C:
+            return column + 50, row + 50
+        if self == self.D:
+            return column + 50, row + 100
+        if self == self.E:
+            return column, row + 100
+        if self == self.F:
+            return column, row + 150
+
+    def wrap_around(self, column, row, direction):  # Side, column, row, direction
+        if self == self.A:
+            if direction == Direction.RIGHT:
+                return self.B, 0, row, Direction.RIGHT
+            if direction == Direction.DOWN:
+                return self.C, column, 0, Direction.DOWN
+            if direction == Direction.LEFT:
+                return self.E, 0, 49 - row, Direction.RIGHT
+            if direction == Direction.UP:
+                return self.F, 0, column, Direction.RIGHT
+
+        if self == self.B:
+            if direction == Direction.RIGHT:
+                return self.D, 49, 49 - row, Direction.LEFT
+            if direction == Direction.DOWN:
+                return self.C, 49, column, Direction.LEFT
+            if direction == Direction.LEFT:
+                return self.A, 49, row, Direction.LEFT
+            if direction == Direction.UP:
+                return self.F, column, 49, Direction.UP
+
+        if self == self.C:
+            if direction == Direction.RIGHT:
+                return self.B, row, 49, Direction.UP
+            if direction == Direction.DOWN:
+                return self.D, column, 0, Direction.DOWN
+            if direction == Direction.LEFT:
+                return self.E, row, 0, Direction.DOWN
+            if direction == Direction.UP:
+                return self.A, column, 49, Direction.UP
+
+        if self == self.D:
+            if direction == Direction.RIGHT:
+                return self.B, 49, 49 - row, Direction.LEFT
+            if direction == Direction.DOWN:
+                return self.F, 49, column, Direction.LEFT
+            if direction == Direction.LEFT:
+                return self.E, 49, row, Direction.LEFT
+            if direction == Direction.UP:
+                return self.C, column, 49, Direction.UP
+
+        if self == self.E:
+            if direction == Direction.RIGHT:
+                return self.D, 0, row, Direction.RIGHT
+            if direction == Direction.DOWN:
+                return self.F, column, 0, Direction.DOWN
+            if direction == Direction.LEFT:
+                return self.A, 0, 49 - row, Direction.RIGHT
+            if direction == Direction.UP:
+                return self.C, 0, column, Direction.RIGHT
+
+        if self == self.F:
+            if direction == Direction.RIGHT:
+                return self.D, row, 49, Direction.UP
+            if direction == Direction.DOWN:
+                return self.B, column, 0, Direction.DOWN
+            if direction == Direction.LEFT:
+                return self.A, row, 0, Direction.DOWN
+            if direction == Direction.UP:
+                return self.E, column, 49, Direction.UP
+
+
 def process_data(map: List[str], path: List[Union[str, int]]):
     len_of_strings = max(len(row) for row in map)
     for i in range(len(map)):
@@ -139,6 +224,43 @@ def process_data(map: List[str], path: List[Union[str, int]]):
     return row, column, direction
 
 
+def process_data_2(map: List[str], path: List[Union[str, int]]):
+    column = 0
+    row = 0
+    side = Side.A
+    direction = Direction.RIGHT
+
+    for path_instruction in path:
+        if path_instruction == "L" or path_instruction == "R":
+            direction = direction.turn(path_instruction)
+            continue
+
+        print(f"Going {direction} for {path_instruction} steps from ({row}, {column}) on {side}")
+
+        for _ in range(path_instruction):
+            dy, dx = direction.get_delta()
+
+            next_side = side
+            next_row = row + dy
+            next_column = column + dx
+            next_direction = direction
+
+            if next_row < 0 or next_row > 49:
+                next_side, next_column, next_row, next_direction = side.wrap_around(next_column, next_row, next_direction)
+            elif next_column < 0 or next_column > 49:
+                next_side, next_column, next_row, next_direction = side.wrap_around(next_column, next_row, next_direction)
+
+            absolute_column, absolute_row = next_side.get_absolute(next_column, next_row)
+
+            if map[absolute_row][absolute_column] == "#":
+                break
+
+            side, column, row, direction = next_side, next_column, next_row, next_direction
+
+    return row, column, direction
+
+
+
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", do_not_strip=True, is_test=is_test)
     result = process_data(data, parse_instructions(test_path if is_test else real_path))
@@ -149,7 +271,7 @@ def part_1(is_test: bool) -> int:
 
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", do_not_strip=True, is_test=is_test)
-    result = process_data(data, parse_instructions(test_path if is_test else real_path))
+    result = process_data_2(data, parse_instructions(test_path if is_test else real_path))
 
     # The final password is the sum of 1000 times the row, 4 times the column, and the facing.
     return 1000 * (result[0] + 1) + 4 * (result[1] + 1) + result[2].value
@@ -157,5 +279,5 @@ def part_2(is_test: bool) -> int:
 
 if __name__ == '__main__':
     is_test = False
-    print(f"Day {DAY} result 1: {part_1(is_test)}")  # 128346 is too high, so 174034 is definitely too high.
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 1: {part_1(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")  # 6192 is too low.

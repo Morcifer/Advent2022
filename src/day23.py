@@ -48,9 +48,16 @@ def process_data(data: List[str], turns: int) -> int:
         # Part 1: Find spot to go to
         for elf_x, elf_y in elves:
             for direction, (direction_dx, direction_dy) in directions:
+                direction_allowed = True
                 for neighbour_dx, neighbour_dy in neighbours[direction]:
-                    if (elf_x + neighbour_dx, elf_y + neighbour_dy) not in elves:
-                        new_elves.append((elf_x + direction_dx, elf_y + direction_dy))
+                    if (elf_x + neighbour_dx, elf_y + neighbour_dy) in elves:
+                        direction_allowed = False
+                        break
+
+                if direction_allowed:
+                    print(f"The elf in ({elf_x}, {elf_y}) wants to go {direction}")
+                    new_elves.append((elf_x + direction_dx, elf_y + direction_dy))
+                    break
 
         # Part 2: Go to, if unoccupied
         new_elves_counter = Counter(new_elves)
@@ -72,7 +79,7 @@ def process_data(data: List[str], turns: int) -> int:
     max_x, min_x = max(x for x, y in elves), min(x for x, y in elves)
     max_y, min_y = max(y for x, y in elves), min(y for x, y in elves)
 
-    return (max_x - min_x) * (max_y - min_y) - len(elves)
+    return (max_x - min_x + 1) * (max_y - min_y + 1) - len(elves)
 
 
 def part_1(is_test: bool) -> int:

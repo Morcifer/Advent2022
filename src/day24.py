@@ -33,7 +33,52 @@ def draw_blizzards_on_map(elves):
         print(row)
 
 
+class BlizzardHandler:
+    def __init__(self, blizzards, width, height):
+        self.width = width
+        self.height = height
+
+        self.split_blizzards = {
+            "^": {0: []},
+            "v": {0: []},
+            "<": {0: []},
+            ">": {0: []},
+        }
+
+        for x, y, direction in blizzards:
+            self.split_blizzards[direction][0].append((x, y))
+
+        for minute in range(1, width - 2):
+            # Right
+            previous_minute = self.split_blizzards[">"][minute - 1]
+            self.split_blizzards[">"][minute] = [(1 if x == width - 2 else x + 1, y) for (x, y) in previous_minute]
+
+            # Left
+            previous_minute = self.split_blizzards["<"][minute - 1]
+            self.split_blizzards["<"][minute] = [(width - 2 if x == 1 else x - 1, y) for (x, y) in previous_minute]
+
+        for minute in range(1, height - 2):
+            # Up
+            previous_minute = self.split_blizzards["^"][minute - 1]
+            self.split_blizzards["^"][minute] = [(x, height - 2 if y == 1 else y - 1) for (x, y) in previous_minute]
+
+            # Left
+            previous_minute = self.split_blizzards["v"][minute - 1]
+            self.split_blizzards["v"][minute] = [(x, 1 if y == height - 2 else y + 1) for (x, y) in previous_minute]
+
+    def is_blizzard_in_spot_on_minute(self, minute, spot):
+        rights = self.split_blizzards[">"][minute % (self.width - 2)]
+        lefts = self.split_blizzards["<"][minute % (self.width - 2)]
+        ups = self.split_blizzards["^"][minute % (self.height - 2)]
+        downs = self.split_blizzards["v"][minute % (self.height - 2)]
+
+        return spot in rights or spot in lefts or spot in ups or spot in downs
+
+
 def process_data(data: List[str]) -> int:
+    height = len(data)
+    width = len(data[0])
+
     blizzards = []
 
     for y, row in enumerate(data):
@@ -41,61 +86,34 @@ def process_data(data: List[str]) -> int:
             if character in [">", "<", "^", "v"]:
                 blizzards.append((x, y, character))
 
-    directions = {
-        "^": (0, -1),
-        "v": (0, 1),
-        "<": (-1, 0),
-        ">": (1, 0),
-    }
+    blizzard_handler = BlizzardHandler(blizzards, width, height)
 
-    height = len(data)
-    width = len(data[0])
+    neighbours = [(0, -1), (0, 1), (-1, 0), (1, 0)]
 
     entrance = (1, 0)
     exit = (width - 2, height - 1)
 
-    to_search = [(0, entrance, blizzards.copy())]
+    to_search = [(0, entrance[0], entrance[1])]
 
     while len(to_search) > 0:
-        minute, (spot_x, spot_y), blizzards = to_search.pop(0)
+        minute, spot_x, spot_y = to_search.pop(0)
 
         print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y})")
 
-        # Update blizzards to know where to go.
-        new_blizzards = []
-
-        for blizzard_x, blizzard_y, blizzard_direction in blizzards:
-            dx, dy = directions[blizzard_direction]
-            new_x, new_y = blizzard_x + dx, blizzard_y + dy
-
-            if new_x == 0:
-                new_x = width - 2
-            if new_x == width - 1:
-                new_x = 1
-
-            if new_y == 0:
-                new_y = height - 2
-            if new_y == height - 1:
-                new_y = 1
-
-            new_blizzards.append((new_x, new_y, blizzard_direction))
-
-        new_blizzards_spots = set((x, y) for x, y, _ in new_blizzards)
-
         # Wait
-        if (spot_x, spot_y) not in new_blizzards_spots:
-            to_search.append((minute + 1, (spot_x, spot_y), new_blizzards.copy()))
+        if not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x, spot_y)):
+            to_search.append((minute + 1, spot_x, spot_y))
 
         # Move
-        for dx, dy in directions.values():
+        for dx, dy in neighbours:
             if (spot_x + dx, spot_y + dy) == exit:
                 return minute + 1
 
             if (spot_y + dy, spot_x + dx) != entrance \
                     and 1 <= spot_x + dx <= width - 2 \
                     and 1 <= spot_y + dy <= height - 2 \
-                    and (spot_x + dx, spot_y + dy) not in new_blizzards_spots:
-                to_search.append((minute + 1, (spot_x + dx, spot_y + dy), new_blizzards.copy()))
+                    and not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x + dx, spot_y + dy)):
+                to_search.append((minute + 1, spot_x + dx, spot_y + dy))
 
     return -1
 

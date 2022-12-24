@@ -88,15 +88,25 @@ def process_data(data: List[str], there_and_back_and_there) -> int:
 
     blizzard_handler = BlizzardHandler(blizzards, width, height)
 
-    neighbours = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-
     entrance = (1, 0)
     exit = (width - 2, height - 1)
 
-    to_search = [(0, entrance[0], entrance[1])]
+    at_exit = search(entrance, exit, width, height, 0, blizzard_handler)
+    if not there_and_back_and_there:
+        return at_exit
+
+    at_entrance = search(exit, entrance, width, height, at_exit, blizzard_handler)
+
+    return search(entrance, exit, width, height, at_entrance, blizzard_handler)
+
+
+def search(entrance, exit, width, height, minute, blizzard_handler):
+    neighbours = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+
+    to_search = [(minute, entrance[0], entrance[1])]
     searched = set()
 
-    max_minute = 0
+    max_minute = minute
 
     while len(to_search) > 0:
         state = to_search.pop(0)
@@ -110,7 +120,7 @@ def process_data(data: List[str], there_and_back_and_there) -> int:
 
         if minute > max_minute:
             max_minute = minute
-            print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y}). We have {len(to_search)} options to explore.")
+            # print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y}). We have {len(to_search)} options to explore.")
 
         # Wait - this one's allowed regardless.
         if not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x, spot_y)):
@@ -126,8 +136,6 @@ def process_data(data: List[str], there_and_back_and_there) -> int:
                     and 1 <= spot_y + dy <= height - 2 \
                     and not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x + dx, spot_y + dy)):
                 to_search.append((minute + 1, spot_x + dx, spot_y + dy))
-
-    return -1
 
 
 def part_1(is_test: bool) -> int:

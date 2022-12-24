@@ -95,10 +95,14 @@ def process_data(data: List[str]) -> int:
 
     to_search = [(0, entrance[0], entrance[1])]
 
+    max_minute = 0
+
     while len(to_search) > 0:
         minute, spot_x, spot_y = to_search.pop(0)
 
-        print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y})")
+        if minute > max_minute:
+            max_minute = minute
+            print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y}). We have {len(to_search)} options to explore.")
 
         # Wait
         if not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x, spot_y)):

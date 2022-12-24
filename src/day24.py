@@ -75,7 +75,7 @@ class BlizzardHandler:
         return spot in rights or spot in lefts or spot in ups or spot in downs
 
 
-def process_data(data: List[str]) -> int:
+def process_data(data: List[str], there_and_back_and_there) -> int:
     height = len(data)
     width = len(data[0])
 
@@ -94,17 +94,25 @@ def process_data(data: List[str]) -> int:
     exit = (width - 2, height - 1)
 
     to_search = [(0, entrance[0], entrance[1])]
+    searched = set()
 
     max_minute = 0
 
     while len(to_search) > 0:
-        minute, spot_x, spot_y = to_search.pop(0)
+        state = to_search.pop(0)
+
+        if state in searched:
+            continue
+
+        searched.add(state)
+
+        minute, spot_x, spot_y = state
 
         if minute > max_minute:
             max_minute = minute
             print(f"Exploring minute {minute} where we're in ({spot_x}, {spot_y}). We have {len(to_search)} options to explore.")
 
-        # Wait
+        # Wait - this one's allowed regardless.
         if not blizzard_handler.is_blizzard_in_spot_on_minute(minute + 1, spot=(spot_x, spot_y)):
             to_search.append((minute + 1, spot_x, spot_y))
 
@@ -124,17 +132,17 @@ def process_data(data: List[str]) -> int:
 
 def part_1(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data)
+    result = process_data(data, there_and_back_and_there=False)
     return result
 
 
 def part_2(is_test: bool) -> int:
     data = load_data(DAY, parser, "data", is_test=is_test)
-    result = process_data(data)
+    result = process_data(data, there_and_back_and_there=True)
     return result
 
 
 if __name__ == '__main__':
     is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
-    # print(f"Day {DAY} result 2: {part_2(is_test)}")
+    print(f"Day {DAY} result 2: {part_2(is_test)}")

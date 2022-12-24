@@ -281,4 +281,4 @@ def part_2(is_test: bool) -> int:
 if __name__ == '__main__':
     is_test = False
     print(f"Day {DAY} result 1: {part_1(is_test)}")
-    print(f"Day {DAY} result 2: {part_2(is_test)}")  # 6192 is too low, 106396 is too high. 106392?
+    print(f"Day {DAY} result 2: {part_2(is_test)}")  # This will only work with the non-test data, because fuck this.
